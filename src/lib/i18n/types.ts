@@ -157,6 +157,9 @@ export interface Translations {
   // ─── Charts ───
   netWorthProjection: string;
   netWorthProjectionDesc: string;
+  netWorthProjectionDescBridge: string;
+  standardFireTarget: string;
+  bridgeEntryLevel: string;
   baseCase: string;
   optimistic: string;
   pessimistic: string;

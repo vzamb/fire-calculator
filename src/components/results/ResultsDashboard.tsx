@@ -14,7 +14,7 @@ export function ResultsDashboard() {
   const t = useT();
 
   const hasAdjustments = result.pensionCreditToday > 0 || result.debtCostToday > 0;
-  const adjustedBase = Math.max(0, result.fireNumberToday - result.pensionCreditToday + result.debtCostToday);
+  const adjustedBase = result.fireNumberToday;
 
   return (
     <div className="space-y-6 pb-12">
@@ -37,7 +37,7 @@ export function ResultsDashboard() {
           {/* Base */}
           <div className="flex justify-between items-center gap-4">
             <span className="text-muted-foreground truncate">{t.explainerBase}</span>
-            <span className="text-foreground font-medium tabular-nums">{formatCurrency(result.fireNumberToday)}</span>
+            <span className="text-foreground font-medium tabular-nums">{formatCurrency(result.fireNumberBaseToday)}</span>
           </div>
 
           {/* Pension credit */}

@@ -116,7 +116,8 @@ export interface YearlyProjection {
 
 export interface FireResult {
   fireNumber: number; // inflation-adjusted FIRE number at projected FIRE age
-  fireNumberToday: number; // FIRE number in today's euros
+  fireNumberToday: number; // adjusted FIRE number in today's euros (after pension/debt adjustments)
+  fireNumberBaseToday: number; // raw FIRE number in today's euros (expenses ÷ SWR)
   fireAge: number;
   fireDate: Date;
   yearsToFire: number;

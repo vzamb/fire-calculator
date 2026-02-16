@@ -114,7 +114,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
   // ─── FIRE Number in TODAY's euros ───
   // This is the baseline: Annual retirement spending / SWR
   const baseAnnualExpenses = expenses.monthlyExpenses * 12;
-  const fireNumberToday = (baseAnnualExpenses * postRetirementFactor) / swr;
+  const fireNumberBaseToday = (baseAnnualExpenses * postRetirementFactor) / swr;
 
   const totalMonthlyIncome = income.monthlyNetSalary + income.additionalMonthlyIncome;
   const monthlyInvestment = fireGoals.monthlyInvestment;
@@ -254,7 +254,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
       if (portfolio >= adjustedRequired && fireAge === null) {
         fireAge = age;
         isRetired = true;
-        pensionCreditAtFire = Math.max(0, fireNumberToday - reqToday);
+        pensionCreditAtFire = Math.max(0, fireNumberBaseToday - reqToday);
         debtCostAtFire = debtPV / inflationMultiplier;
         retirementExpenses = livingExpenses * postRetirementFactor;
       }
@@ -289,7 +289,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
             isRetired = true;
             bridgeGapAtFire = adjustedRequired - portfolio;
             bridgeIncomeTotalAtFire = bridgeIncomes.reduce((s, e) => s + e.amount, 0);
-            pensionCreditAtFire = Math.max(0, fireNumberToday - reqToday);
+            pensionCreditAtFire = Math.max(0, fireNumberBaseToday - reqToday);
             debtCostAtFire = debtPV / inflationMultiplier;
             retirementExpenses = candidateRetExpenses;
           }
@@ -410,7 +410,8 @@ export function calculateFire(inputs: FireInputs): FireResult {
 
   return {
     fireNumber,
-    fireNumberToday,
+    fireNumberToday: adjustedFireNumberToday,
+    fireNumberBaseToday,
     fireAge,
     fireDate,
     yearsToFire,

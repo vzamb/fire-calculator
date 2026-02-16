@@ -124,7 +124,7 @@ export const it: Translations = {
   fireAge: 'Età FIRE',
   fireAgeTooltip: 'L\'età in cui il tuo portafoglio di investimenti può coprire tutte le spese, rendendo il lavoro opzionale.',
   fireNumber: 'Numero FIRE',
-  fireNumberTooltip: 'L\'importo effettivo che il tuo portafoglio deve raggiungere il giorno del pensionamento, considerando l\'inflazione. Cresce con l\'età FIRE perché i prezzi salgono nel tempo. Basato su: (Spese Annuali × % Post-Pensionamento × Tipo FIRE) ÷ SWR, poi aggiustato per inflazione.',
+  fireNumberTooltip: 'L\'importo effettivo che il tuo portafoglio deve raggiungere il giorno del pensionamento, considerando l\'inflazione. Cresce con l\'età FIRE perché i prezzi salgono nel tempo. Basato sulle spese annue in pensione e sullo SWR, poi corretto per pensione/debiti e inflazione.',
   timeToFire: 'Tempo al FIRE',
   timeToFireTooltip: 'Quanti anni mancano al raggiungimento del Numero FIRE aggiustato per inflazione. Cambia con investimento mensile, rendimenti, patrimonio attuale e spese.',
   savingsRate: 'Tasso di Risparmio',
@@ -157,6 +157,9 @@ export const it: Translations = {
   // ─── Charts ───
   netWorthProjection: 'Proiezione Patrimonio Netto',
   netWorthProjectionDesc: 'Mostra come cresce il portafoglio nel tempo. La linea tratteggiata è il tuo Numero FIRE (il capitale necessario per la pensione). Quando la linea continua lo supera, hai raggiunto il FIRE.',
+  netWorthProjectionDescBridge: 'Mostra come cresce il portafoglio nel tempo. Linea arancione tratteggiata = target FIRE standard. Linea verde tratteggiata = livello di ingresso bridge usato per la tua data FIRE attuale (basata su entrate future bridge).',
+  standardFireTarget: 'Target standard',
+  bridgeEntryLevel: 'Ingresso bridge',
   baseCase: 'Scenario Base',
   optimistic: 'Ottimistico',
   pessimistic: 'Pessimistico',

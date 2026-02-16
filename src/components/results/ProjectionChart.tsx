@@ -20,6 +20,7 @@ interface ProjectionChartProps {
 
 export function ProjectionChart({ result }: ProjectionChartProps) {
   const t = useT();
+  const isBridgeStrategy = result.bridgeGap > 0;
   const data = result.yearlyProjections.map((p) => ({
     age: p.age,
     year: p.year,
@@ -41,7 +42,7 @@ export function ProjectionChart({ result }: ProjectionChartProps) {
           {t.netWorthProjection}
         </CardTitle>
         <p className="text-xs text-muted-foreground mt-1">
-          {t.netWorthProjectionDesc}
+          {isBridgeStrategy ? t.netWorthProjectionDescBridge : t.netWorthProjectionDesc}
         </p>
       </CardHeader>
       <CardContent>
@@ -128,7 +129,36 @@ export function ProjectionChart({ result }: ProjectionChartProps) {
                 strokeDasharray="6 4"
                 strokeWidth={1.5}
                 ifOverflow="extendDomain"
+                label={isBridgeStrategy ? {
+                  value: t.standardFireTarget,
+                  position: 'insideTopLeft',
+                  style: {
+                    fontSize: 10,
+                    fill: 'hsl(24, 95%, 53%)',
+                    fontWeight: 600,
+                  },
+                } : undefined}
               />
+
+              {/* Bridge strategy: actual entry portfolio at FIRE age */}
+              {isBridgeStrategy && fireProjection && (
+                <ReferenceLine
+                  y={fireProjection.portfolioValue}
+                  stroke="hsl(160, 60%, 45%)"
+                  strokeDasharray="3 3"
+                  strokeWidth={1.5}
+                  ifOverflow="extendDomain"
+                  label={{
+                    value: t.bridgeEntryLevel,
+                    position: 'insideTopRight',
+                    style: {
+                      fontSize: 10,
+                      fill: 'hsl(160, 60%, 45%)',
+                      fontWeight: 600,
+                    },
+                  }}
+                />
+              )}
 
               {/* FIRE Age reference line */}
               {fireProjection && (
@@ -138,7 +168,7 @@ export function ProjectionChart({ result }: ProjectionChartProps) {
                   strokeDasharray="6 4"
                   strokeWidth={1.5}
                   label={{
-                    value: `🔥 FIRE`,
+                    value: isBridgeStrategy ? `🔥 FIRE (${t.bridgeStrategyLabel})` : `🔥 FIRE`,
                     position: 'insideTopRight',
                     style: {
                       fontSize: 10,

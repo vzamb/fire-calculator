@@ -124,7 +124,7 @@ export const en: Translations = {
   fireAge: 'FIRE Age',
   fireAgeTooltip: 'The age at which your investment portfolio can fully cover your living expenses, making work optional.',
   fireNumber: 'FIRE Number',
-  fireNumberTooltip: 'The actual euro amount your portfolio must reach on the day you retire, accounting for inflation. It grows with your FIRE age because prices rise over time — retiring at 40 means less inflation than at 50, so the target is lower. Based on: (Annual Expenses × Post-Retirement % × FIRE Type) ÷ SWR, then adjusted for inflation.',
+  fireNumberTooltip: 'The actual euro amount your portfolio must reach on the day you retire, accounting for inflation. It grows with your FIRE age because prices rise over time — retiring at 40 means less inflation than at 50, so the target is lower. Based on annual retirement expenses and SWR, then adjusted for pension/debt effects and inflation.',
   timeToFire: 'Time to FIRE',
   timeToFireTooltip: 'How many years until your portfolio reaches the inflation-adjusted FIRE Number. This changes with investment amount, returns, current assets, and expenses.',
   savingsRate: 'Savings Rate',
@@ -157,6 +157,9 @@ export const en: Translations = {
   // ─── Charts ───
   netWorthProjection: 'Net Worth Projection',
   netWorthProjectionDesc: "Shows how your portfolio grows over time. The dashed horizontal line is your FIRE Number (the portfolio needed to retire). When the solid line crosses it, you've reached FIRE.",
+  netWorthProjectionDescBridge: 'Shows how your portfolio grows over time. Orange dashed line = standard FIRE target. Green dashed line = bridge entry level used for your current FIRE date (based on future bridge income).',
+  standardFireTarget: 'Standard target',
+  bridgeEntryLevel: 'Bridge entry',
   baseCase: 'Base Case',
   optimistic: 'Optimistic',
   pessimistic: 'Pessimistic',
