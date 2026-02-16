@@ -1,4 +1,4 @@
-import { Flame, Moon, Sun, RotateCcw } from 'lucide-react';
+import { Moon, Sun, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useFireStore } from '@/store/fireStore';
 import { useT } from '@/lib/i18n';
@@ -16,8 +16,14 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl">
       <div className="max-w-[1440px] mx-auto flex h-14 items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 shadow-lg shadow-orange-500/25">
-            <Flame className="w-4 h-4 text-white" />
+          <div className="flex items-center justify-center w-8 h-8">
+            <img
+              src="/fire.svg"
+              alt="FIRE"
+              className="w-5 h-5 opacity-90 saturate-[0.8] contrast-95 brightness-110"
+              loading="eager"
+              decoding="async"
+            />
           </div>
           <div>
             <h1 className="text-base font-bold tracking-tight">

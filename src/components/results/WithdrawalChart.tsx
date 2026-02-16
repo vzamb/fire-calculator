@@ -13,6 +13,7 @@ import { formatCurrencyCompact, formatCurrency } from '@/lib/formatters';
 import type { FireResult } from '@/types';
 import { useFireStore } from '@/store/fireStore';
 import { useT } from '@/lib/i18n';
+import { Landmark } from 'lucide-react';
 
 interface WithdrawalChartProps {
   result: FireResult;
@@ -35,7 +36,7 @@ export function WithdrawalChart({ result }: WithdrawalChartProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span className="text-lg">🏖️</span>
+            <Landmark className="w-4 h-4 text-primary" />
             {t.postRetirementPortfolio}
           </CardTitle>
         </CardHeader>
@@ -52,7 +53,7 @@ export function WithdrawalChart({ result }: WithdrawalChartProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-            <span className="text-lg">🏖️</span>
+            <Landmark className="w-4 h-4 text-primary" />
             {t.postRetirementPortfolio}
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">

@@ -385,16 +385,6 @@ function ExpensesSection() {
         min={0}
         max={10}
       />
-      <Slider
-        label={t.postRetirementSpending}
-        min={50}
-        max={150}
-        step={5}
-        value={expenses.postRetirementExpensePercent}
-        onChange={(v) => updateExpenses({ postRetirementExpensePercent: v })}
-        suffix="%"
-        formatValue={(v) => `${v}% (€${Math.round((expenses.monthlyExpenses * v) / 100).toLocaleString('de-DE')}/mo)`}
-      />
     </Section>
   );
 }
@@ -710,7 +700,7 @@ function LifeEventsSection() {
 // ─── FIRE Goals Section ───
 function GoalsSection() {
   const { inputs, updateFireGoals, updateExpenses } = useFireStore();
-  const { fireGoals } = inputs;
+  const { fireGoals, expenses } = inputs;
   const t = useT();
 
   return (
@@ -750,6 +740,17 @@ function GoalsSection() {
           );
         })}
       </div>
+
+      <Slider
+        label={t.postRetirementSpending}
+        min={50}
+        max={150}
+        step={5}
+        value={expenses.postRetirementExpensePercent}
+        onChange={(v) => updateExpenses({ postRetirementExpensePercent: v })}
+        suffix="%"
+        formatValue={(v) => `${v}% (€${Math.round((expenses.monthlyExpenses * v) / 100).toLocaleString('de-DE')}/mo)`}
+      />
 
       <Slider
         label={t.safeWithdrawalRate}

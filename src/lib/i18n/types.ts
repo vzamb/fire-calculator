@@ -159,7 +159,6 @@ export interface Translations {
   netWorthProjectionDesc: string;
   netWorthProjectionDescBridge: string;
   standardFireTarget: string;
-  bridgeEntryLevel: string;
   baseCase: string;
   optimistic: string;
   pessimistic: string;
@@ -191,18 +190,10 @@ export interface Translations {
   // ─── Scenarios ───
   whatIfScenarios: string;
   whatIfScenariosDesc: string;
-  scenarioInvest200: string;
-  scenarioInvest200Desc: string;
-  scenarioInvest500: string;
-  scenarioInvest500Desc: string;
-  scenarioLowerReturns: string;
-  scenarioLowerReturnsDesc: string;
-  scenarioHigherReturns: string;
-  scenarioHigherReturnsDesc: string;
-  scenarioCutExpenses: string;
-  scenarioCutExpensesDesc: string;
-  scenarioSaferSWR: string;
-  scenarioSaferSWRDesc: string;
+  scenarioExtraInvestment: string;
+  scenarioReturnRate: string;
+  scenarioExpenseChange: string;
+  scenarioSWR: string;
   scenario: string;
   difference: string;
   currentPlan: string;

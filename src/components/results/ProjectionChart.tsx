@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { formatCurrencyCompact, formatCurrency } from '@/lib/formatters';
 import type { FireResult } from '@/types';
 import { useT } from '@/lib/i18n';
+import { TrendingUp } from 'lucide-react';
 
 interface ProjectionChartProps {
   result: FireResult;
@@ -38,7 +39,7 @@ export function ProjectionChart({ result }: ProjectionChartProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <span className="text-lg">📈</span>
+          <TrendingUp className="w-4 h-4 text-primary" />
           {t.netWorthProjection}
         </CardTitle>
         <p className="text-xs text-muted-foreground mt-1">
@@ -140,26 +141,6 @@ export function ProjectionChart({ result }: ProjectionChartProps) {
                 } : undefined}
               />
 
-              {/* Bridge strategy: actual entry portfolio at FIRE age */}
-              {isBridgeStrategy && fireProjection && (
-                <ReferenceLine
-                  y={fireProjection.portfolioValue}
-                  stroke="hsl(160, 60%, 45%)"
-                  strokeDasharray="3 3"
-                  strokeWidth={1.5}
-                  ifOverflow="extendDomain"
-                  label={{
-                    value: t.bridgeEntryLevel,
-                    position: 'insideTopRight',
-                    style: {
-                      fontSize: 10,
-                      fill: 'hsl(160, 60%, 45%)',
-                      fontWeight: 600,
-                    },
-                  }}
-                />
-              )}
-
               {/* FIRE Age reference line */}
               {fireProjection && (
                 <ReferenceLine
@@ -168,7 +149,7 @@ export function ProjectionChart({ result }: ProjectionChartProps) {
                   strokeDasharray="6 4"
                   strokeWidth={1.5}
                   label={{
-                    value: isBridgeStrategy ? `🔥 FIRE (${t.bridgeStrategyLabel})` : `🔥 FIRE`,
+                    value: isBridgeStrategy ? `FIRE (${t.bridgeStrategyLabel})` : 'FIRE',
                     position: 'insideTopRight',
                     style: {
                       fontSize: 10,

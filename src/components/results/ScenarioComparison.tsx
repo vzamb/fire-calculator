@@ -1,115 +1,117 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { useFireStore } from '@/store/fireStore';
 import { calculateFire } from '@/lib/calculator';
 import { formatCurrency, formatYears } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Minus, Plus } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import type { FireInputs } from '@/types';
 
 interface ScenarioConfig {
   id: string;
-  label: string;
-  description: string;
   emoji: string;
+  labelKey: string;
+  defaultValue: number;
+  step: number;
+  min: number;
+  max: number;
+  unit: string;
+  format: (v: number) => string;
+  apply: (inputs: FireInputs, value: number) => void;
 }
 
 const SCENARIOS: ScenarioConfig[] = [
   {
-    id: 'invest-200-more',
-    label: 'scenarioInvest200',
-    description: 'scenarioInvest200Desc',
+    id: 'extra-investment',
     emoji: '💰',
+    labelKey: 'scenarioExtraInvestment',
+    defaultValue: 200,
+    step: 50,
+    min: -1000,
+    max: 2000,
+    unit: '€/mo',
+    format: (v) => `${v >= 0 ? '+' : ''}${v}`,
+    apply: (inputs, value) => {
+      inputs.fireGoals.monthlyInvestment += value;
+    },
   },
   {
-    id: 'invest-500-more',
-    label: 'scenarioInvest500',
-    description: 'scenarioInvest500Desc',
-    emoji: '🚀',
-  },
-  {
-    id: 'lower-returns',
-    label: 'scenarioLowerReturns',
-    description: 'scenarioLowerReturnsDesc',
-    emoji: '📉',
-  },
-  {
-    id: 'higher-returns',
-    label: 'scenarioHigherReturns',
-    description: 'scenarioHigherReturnsDesc',
+    id: 'return-rate',
     emoji: '📈',
+    labelKey: 'scenarioReturnRate',
+    defaultValue: 5,
+    step: 0.5,
+    min: 1,
+    max: 15,
+    unit: '%',
+    format: (v) => `${v}`,
+    apply: (inputs, value) => {
+      inputs.investmentStrategy.expectedAnnualReturn = value;
+    },
   },
   {
-    id: 'cut-expenses-10',
-    label: 'scenarioCutExpenses',
-    description: 'scenarioCutExpensesDesc',
+    id: 'expense-change',
     emoji: '✂️',
+    labelKey: 'scenarioExpenseChange',
+    defaultValue: -10,
+    step: 5,
+    min: -50,
+    max: 50,
+    unit: '%',
+    format: (v) => `${v >= 0 ? '+' : ''}${v}`,
+    apply: (inputs, value) => {
+      inputs.expenses.monthlyExpenses *= 1 + value / 100;
+    },
   },
   {
-    id: 'higher-swr',
-    label: 'scenarioSaferSWR',
-    description: 'scenarioSaferSWRDesc',
+    id: 'swr',
     emoji: '🛡️',
+    labelKey: 'scenarioSWR',
+    defaultValue: 3.5,
+    step: 0.25,
+    min: 2,
+    max: 6,
+    unit: '%',
+    format: (v) => `${v}`,
+    apply: (inputs, value) => {
+      inputs.fireGoals.safeWithdrawalRate = value;
+    },
   },
 ];
 
 export function ScenarioComparison() {
   const { inputs, result } = useFireStore();
   const t = useT();
-  const [enabledScenarios, setEnabledScenarios] = useState<Set<string>>(
-    new Set(['invest-200-more', 'cut-expenses-10'])
+
+  const [values, setValues] = useState<Record<string, number>>(
+    Object.fromEntries(SCENARIOS.map((s) => [s.id, s.defaultValue]))
   );
 
-  const toggleScenario = (id: string) => {
-    setEnabledScenarios((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+  const updateValue = (id: string, delta: number, scenario: ScenarioConfig) => {
+    setValues((prev) => ({
+      ...prev,
+      [id]: Math.min(
+        scenario.max,
+        Math.max(scenario.min, +((prev[id] ?? scenario.defaultValue) + delta).toFixed(2))
+      ),
+    }));
   };
 
   const scenarioResults = useMemo(() => {
-    return SCENARIOS.filter((s) => enabledScenarios.has(s.id)).map(
-      (scenario) => {
-        const modifiedInputs = JSON.parse(JSON.stringify(inputs));
-
-        switch (scenario.id) {
-          case 'invest-200-more':
-            modifiedInputs.fireGoals.monthlyInvestment += 200;
-            break;
-          case 'invest-500-more':
-            modifiedInputs.fireGoals.monthlyInvestment += 500;
-            break;
-          case 'lower-returns':
-            modifiedInputs.investmentStrategy.expectedAnnualReturn = 5;
-            modifiedInputs.investmentStrategy.riskProfile = 'conservative';
-            break;
-          case 'higher-returns':
-            modifiedInputs.investmentStrategy.expectedAnnualReturn = 9;
-            modifiedInputs.investmentStrategy.riskProfile = 'aggressive';
-            break;
-          case 'cut-expenses-10':
-            modifiedInputs.expenses.monthlyExpenses *= 0.9;
-            break;
-          case 'higher-swr':
-            modifiedInputs.fireGoals.safeWithdrawalRate = 3.5;
-            break;
-        }
-
-        const scenarioResult = calculateFire(modifiedInputs);
-        return {
-          ...scenario,
-          result: scenarioResult,
-          diff: result ? scenarioResult.yearsToFire - result.yearsToFire : 0,
-        };
-      }
-    );
-  }, [inputs, result, enabledScenarios]);
+    return SCENARIOS.map((scenario) => {
+      const modifiedInputs: FireInputs = JSON.parse(JSON.stringify(inputs));
+      const value = values[scenario.id] ?? scenario.defaultValue;
+      scenario.apply(modifiedInputs, value);
+      const scenarioResult = calculateFire(modifiedInputs);
+      return {
+        ...scenario,
+        value,
+        result: scenarioResult,
+        diff: result ? scenarioResult.yearsToFire - result.yearsToFire : 0,
+      };
+    });
+  }, [inputs, result, values]);
 
   return (
     <Card>
@@ -123,22 +125,6 @@ export function ScenarioComparison() {
         </p>
       </CardHeader>
       <CardContent>
-        {/* Scenario toggles */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {SCENARIOS.map((scenario) => (
-            <Button
-              key={scenario.id}
-              variant={enabledScenarios.has(scenario.id) ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => toggleScenario(scenario.id)}
-              className="text-xs"
-            >
-              {scenario.emoji} {(t as any)[scenario.label]}
-            </Button>
-          ))}
-        </div>
-
-        {/* Results table */}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -188,7 +174,7 @@ export function ScenarioComparison() {
                 </td>
               </tr>
 
-              {/* Scenario rows */}
+              {/* Scenario rows with inline controls */}
               {scenarioResults.map((scenario) => (
                 <tr
                   key={scenario.id}
@@ -196,12 +182,34 @@ export function ScenarioComparison() {
                 >
                   <td className="py-3 pr-4">
                     <div className="flex items-center gap-2">
-                      <span>{scenario.emoji}</span>
-                      <div>
-                        <p className="text-sm font-medium">{(t as any)[scenario.label]}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {(t as any)[scenario.description]}
+                      <span className="text-sm">{scenario.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">
+                          {(t as any)[scenario.labelKey]}
                         </p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <button
+                            onClick={() =>
+                              updateValue(scenario.id, -scenario.step, scenario)
+                            }
+                            disabled={scenario.value <= scenario.min}
+                            className="w-5 h-5 rounded flex items-center justify-center bg-secondary hover:bg-secondary/80 disabled:opacity-30 transition-colors"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="text-xs font-mono font-semibold text-primary min-w-[4.5rem] text-center tabular-nums">
+                            {scenario.format(scenario.value)} {scenario.unit}
+                          </span>
+                          <button
+                            onClick={() =>
+                              updateValue(scenario.id, scenario.step, scenario)
+                            }
+                            disabled={scenario.value >= scenario.max}
+                            className="w-5 h-5 rounded flex items-center justify-center bg-secondary hover:bg-secondary/80 disabled:opacity-30 transition-colors"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </td>

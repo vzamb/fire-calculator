@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { formatCurrency, formatPercent } from '@/lib/formatters';
 import type { FireResult } from '@/types';
 import { useT } from '@/lib/i18n';
+import { PieChart as PieChartIcon } from 'lucide-react';
 
 interface BreakdownChartProps {
   result: FireResult;
@@ -17,8 +18,9 @@ interface BreakdownChartProps {
 
 export function BreakdownChart({ result }: BreakdownChartProps) {
   const t = useT();
-  const contributions = result.totalContributions;
-  const growth = result.totalGrowth;
+  const fireProjection = result.yearlyProjections.find((p) => p.age === result.fireAge);
+  const contributions = fireProjection?.cumulativeContributions ?? result.totalContributions;
+  const growth = fireProjection?.cumulativeGrowth ?? result.totalGrowth;
   const total = contributions + growth;
 
   const data = [
@@ -34,7 +36,7 @@ export function BreakdownChart({ result }: BreakdownChartProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <span className="text-lg">🧩</span>
+          <PieChartIcon className="w-4 h-4 text-primary" />
           {t.wealthBreakdown}
         </CardTitle>
         <p className="text-xs text-muted-foreground mt-1">
@@ -68,10 +70,11 @@ export function BreakdownChart({ result }: BreakdownChartProps) {
                     backgroundColor: 'hsl(var(--popover))',
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '8px',
-                    color: 'hsl(var(--popover-foreground))',
                     fontSize: '13px',
                   }}
-                  formatter={(value: number) => [formatCurrency(value)]}
+                  itemStyle={{ color: 'hsl(var(--popover-foreground))' }}
+                  labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
+                  formatter={(value: number, name: string) => [formatCurrency(value), name]}
                 />
                 <Legend
                   formatter={(value) => (

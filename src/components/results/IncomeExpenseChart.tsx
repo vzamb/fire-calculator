@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { formatCurrencyCompact, formatCurrency } from '@/lib/formatters';
 import type { FireResult } from '@/types';
 import { useT } from '@/lib/i18n';
+import { Scale } from 'lucide-react';
 
 interface IncomeExpenseChartProps {
   result: FireResult;
@@ -36,7 +37,7 @@ export function IncomeExpenseChart({ result }: IncomeExpenseChartProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <span className="text-lg">⚖️</span>
+          <Scale className="w-4 h-4 text-primary" />
           {t.incomeVsExpenses}
         </CardTitle>
         <p className="text-xs text-muted-foreground mt-1">
@@ -121,7 +122,7 @@ export function IncomeExpenseChart({ result }: IncomeExpenseChartProps) {
                 strokeDasharray="6 4"
                 strokeWidth={1.5}
                 label={{
-                  value: '🔥 FIRE',
+                  value: 'FIRE',
                   position: 'insideTopRight',
                   style: {
                     fontSize: 10,
