@@ -72,22 +72,17 @@ export const it: Translations = {
 
   // ─── Investment Strategy ───
   investmentStrategy: 'Strategia di Investimento',
-  investmentStrategySummary: (ret, stocks) => `${ret}% rendimento, ${stocks}% azioni`,
-  conservative: 'Conservativa',
+  conservative: 'Prudente',
   conservativeDesc: 'Rischio basso, crescita stabile — prevalenza obbligazioni',
   moderate: 'Moderata',
   moderateDesc: 'Rischio/rendimento bilanciato — mix diversificato',
   aggressive: 'Aggressiva',
   aggressiveDesc: 'Rischio alto, alto potenziale — prevalenza azionario',
-  custom: 'Personalizzata',
+  custom: 'Custom',
   customDesc: 'Imposta i tuoi parametri',
   expectedAnnualReturn: 'Rendimento Annuo Atteso',
-  stockAllocation: 'Allocazione Azionaria',
-  stockAllocationFormat: (stocks) => `${stocks}% azioni / ${100 - stocks}% obbligazioni`,
-  annualFeesTER: 'Costi Annui (TER)',
-  annualFeesTERTooltip: 'Costo totale degli investimenti (0,1-0,3% per fondi indicizzati)',
   capitalGainsTax: 'Imposta sulle Plusvalenze',
-  capitalGainsTaxTooltip: 'Tassa sui guadagni da investimenti (26% in Italia sugli interessi e capital gain)',
+  capitalGainsTaxTooltip: 'Tassa sui guadagni da investimenti (26% in Italia). Applicata solo alle plusvalenze, non ai contributi.',
 
   // ─── Life Events ───
   lifeEvents: 'Eventi Futuri',

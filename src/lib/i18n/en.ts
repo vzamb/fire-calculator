@@ -72,7 +72,6 @@ export const en: Translations = {
 
   // ─── Investment Strategy ───
   investmentStrategy: 'Investment Strategy',
-  investmentStrategySummary: (ret, stocks) => `${ret}% return, ${stocks}% stocks`,
   conservative: 'Conservative',
   conservativeDesc: 'Lower risk, stable growth — mostly bonds & cash',
   moderate: 'Moderate',
@@ -82,12 +81,8 @@ export const en: Translations = {
   custom: 'Custom',
   customDesc: 'Set your own parameters',
   expectedAnnualReturn: 'Expected Annual Return',
-  stockAllocation: 'Stock Allocation',
-  stockAllocationFormat: (stocks) => `${stocks}% stocks / ${100 - stocks}% bonds`,
-  annualFeesTER: 'Annual Fees (TER)',
-  annualFeesTERTooltip: 'Total cost of your investments (0.1-0.3% for index funds)',
   capitalGainsTax: 'Capital Gains Tax',
-  capitalGainsTaxTooltip: 'Tax on investment gains (26% in Italy)',
+  capitalGainsTaxTooltip: 'Tax on investment gains (26% in Italy). Applied only to growth, not contributions.',
 
   // ─── Life Events ───
   lifeEvents: 'Life Events',

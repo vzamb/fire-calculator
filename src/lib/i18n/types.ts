@@ -72,7 +72,6 @@ export interface Translations {
 
   // ─── Investment Strategy ───
   investmentStrategy: string;
-  investmentStrategySummary: (ret: number, stocks: number) => string;
   conservative: string;
   conservativeDesc: string;
   moderate: string;
@@ -82,10 +81,6 @@ export interface Translations {
   custom: string;
   customDesc: string;
   expectedAnnualReturn: string;
-  stockAllocation: string;
-  stockAllocationFormat: (stocks: number) => string;
-  annualFeesTER: string;
-  annualFeesTERTooltip: string;
   capitalGainsTax: string;
   capitalGainsTaxTooltip: string;
 

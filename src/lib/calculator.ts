@@ -106,8 +106,10 @@ export function calculateFire(inputs: FireInputs): FireResult {
   // ─── Core rates ───
   const swr = fireGoals.safeWithdrawalRate / 100;
   const postRetirementFactor = expenses.postRetirementExpensePercent / 100;
-  const netReturn =
-    (investmentStrategy.expectedAnnualReturn - investmentStrategy.annualFees) / 100;
+  const grossReturn = investmentStrategy.expectedAnnualReturn / 100;
+  const capitalGainsTax = investmentStrategy.capitalGainsTaxRate / 100;
+  // Capital gains tax applies only to growth, so net return = gross × (1 − tax)
+  const netReturn = grossReturn * (1 - capitalGainsTax);
   const inflation = expenses.annualInflationRate / 100;
   const realReturn = Math.max(0.001, (1 + netReturn) / (1 + inflation) - 1);
 

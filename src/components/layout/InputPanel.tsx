@@ -238,9 +238,9 @@ export function InputPanel() {
         iconColor="text-violet-500"
         iconBg="bg-violet-500/10"
         title={t.investmentStrategy}
-        summary={t.investmentStrategySummary(investmentStrategy.expectedAnnualReturn, investmentStrategy.stockAllocation)}
+        summary={`~${investmentStrategy.expectedAnnualReturn}%`}
       >
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {Object.entries(RISK_PROFILES).map(([key, profile]) => (
             <button
               key={key}
@@ -256,13 +256,13 @@ export function InputPanel() {
                 }
               }}
               className={cn(
-                'flex flex-col items-start p-2.5 rounded-lg border text-left transition-all',
+                'flex flex-col items-center p-2.5 rounded-lg border text-center transition-all',
                 investmentStrategy.riskProfile === key
                   ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
                   : 'border-border hover:border-primary/30'
               )}
             >
-              <span className="text-xs font-semibold">{profile.label}</span>
+              <span className="text-[11px] font-semibold leading-tight truncate w-full">{(t as any)[key]}</span>
               <span className="text-[10px] text-muted-foreground">~{profile.return}%</span>
             </button>
           ))}
@@ -276,34 +276,14 @@ export function InputPanel() {
           onChange={(v) => updateInvestmentStrategy({ expectedAnnualReturn: v, riskProfile: 'custom' })}
           suffix="%"
         />
-        <Slider
-          label={t.stockAllocation}
-          min={0}
-          max={100}
-          step={5}
-          value={investmentStrategy.stockAllocation}
-          onChange={(v) => updateInvestmentStrategy({ stockAllocation: v, riskProfile: 'custom' })}
-          suffix="%"
-          formatValue={(v) => t.stockAllocationFormat(v)}
+        <PercentInput
+          label={t.capitalGainsTax}
+          tooltip={t.capitalGainsTaxTooltip}
+          value={investmentStrategy.capitalGainsTaxRate}
+          onChange={(v) => updateInvestmentStrategy({ capitalGainsTaxRate: v })}
+          step={1}
+          max={50}
         />
-        <div className="grid grid-cols-2 gap-4">
-          <PercentInput
-            label={t.annualFeesTER}
-            tooltip={t.annualFeesTERTooltip}
-            value={investmentStrategy.annualFees}
-            onChange={(v) => updateInvestmentStrategy({ annualFees: v })}
-            step={0.05}
-            max={3}
-          />
-          <PercentInput
-            label={t.capitalGainsTax}
-            tooltip={t.capitalGainsTaxTooltip}
-            value={investmentStrategy.capitalGainsTaxRate}
-            onChange={(v) => updateInvestmentStrategy({ capitalGainsTaxRate: v })}
-            step={1}
-            max={50}
-          />
-        </div>
       </Section>
 
       {/* ─── Life Events ─── */}
