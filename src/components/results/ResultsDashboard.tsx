@@ -5,6 +5,8 @@ import { IncomeExpenseChart } from './IncomeExpenseChart';
 import { WithdrawalChart } from './WithdrawalChart';
 import { BreakdownChart } from './BreakdownChart';
 import { ScenarioComparison } from './ScenarioComparison';
+import { MonteCarloChart } from './MonteCarloChart';
+import { MilestoneTimeline } from './MilestoneTimeline';
 import { formatCurrency } from '@/lib/formatters';
 import { Info } from 'lucide-react';
 import { useT } from '@/lib/i18n';
@@ -46,7 +48,7 @@ export function ResultsDashboard() {
               <span className="text-emerald-600 dark:text-emerald-400 truncate">
                 {t.explainerPensionCredit}
                 <span className="text-[10px] text-muted-foreground ml-1 font-sans">
-                  ({t.pensionCreditDetail(inputs.income.pensionMonthlyAmount.toLocaleString('de-DE'), inputs.income.pensionStartAge)})
+                  ({t.pensionCreditDetail(formatCurrency(inputs.income.pensionMonthlyAmount), inputs.income.pensionStartAge)})
                 </span>
               </span>
               <span className="text-emerald-600 dark:text-emerald-400 font-medium tabular-nums whitespace-nowrap">
@@ -115,10 +117,16 @@ export function ResultsDashboard() {
       {/* Summary Cards */}
       <SummaryCards result={result} />
 
+      {/* Milestone Timeline */}
+      <MilestoneTimeline />
+
       {/* Charts Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div className="xl:col-span-2">
           <ProjectionChart result={result} />
+        </div>
+        <div className="xl:col-span-2">
+          <MonteCarloChart />
         </div>
         <IncomeExpenseChart result={result} />
         <WithdrawalChart result={result} />

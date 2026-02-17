@@ -131,19 +131,19 @@ export const en: Translations = {
   savingsGreat: 'Great progress! 💪',
   savingsGood: 'Good start! 👍',
   savingsGrow: 'Room to grow 📈',
-  investingPerMonth: (amount) => `Investing €${amount}/mo`,
+  investingPerMonth: (amount) => `Investing ${amount}/mo`,
   atAge: (age, todayValue) => `At age ${age} (${todayValue} today)`,
 
   // ─── Results — Dashboard ───
   yourFireNumber: (val) => `Your FIRE Number: ${val}`,
   fireNumberExplainer: (age) => `This is the portfolio you need at age ${age}, adjusted for inflation.`,
-  explainerBase: "Base (today's €)",
+  explainerBase: "Base (today's value)",
   explainerPensionCredit: 'Pension credit',
   explainerDebtCost: 'Debt cost',
-  explainerAdjustedBase: "Adjusted (today's €)",
+  explainerAdjustedBase: "Adjusted (today's value)",
   explainerInflation: (years) => `× ${years}y inflation`,
   explainerFinalTarget: 'Target at retirement',
-  pensionCreditDetail: (amount, age) => `€${amount}/mo from age ${age} reduces withdrawals`,
+  pensionCreditDetail: (amount, age) => `${amount}/mo from age ${age} reduces withdrawals`,
   debtCostDetail: 'remaining payments at retirement',
   fireNumberHint: 'Depends on expenses, post-retirement %, SWR, pension, and debts. Earlier retirement = less inflation = lower target.',
   bridgeStrategyActive: '⚠️ Bridge strategy active:',
@@ -196,6 +196,54 @@ export const en: Translations = {
   sooner: (y) => `${y}y sooner`,
   later: (y) => `${y}y later`,
   same: 'Same',
+
+  // ─── Monte Carlo ───
+  monteCarloTitle: 'Monte Carlo Simulation',
+  monteCarloDesc: '500 randomized simulations using historical market volatility. Shows the range of possible outcomes for your portfolio.',
+  monteCarloSuccess: 'Survival rate',
+  monteCarloMedianAge: 'Median FIRE age',
+  monteCarloSimulations: 'Simulations',
+  monteCarloP5: '5th percentile (worst)',
+  monteCarloP25: '25th percentile',
+  monteCarloMedian: 'Median (50th)',
+  monteCarloP75: '75th percentile',
+  monteCarloP95: '95th percentile (best)',
+  monteCarloFootnote: 'Log-normal returns with ~12% annual volatility. Past performance does not guarantee future results.',
+  monteCarloTargetAge: 'Target retirement age',
+
+  // ─── Milestone Timeline ───
+  milestoneTimeline: 'Milestones',
+  milestoneTimelineDesc: 'Key financial milestones on your path to FIRE.',
+  milestoneEmergencyFund: 'Emergency Fund',
+  milestone100k: 'First 100k',
+  milestoneCoastFire: 'Coast FIRE',
+  milestoneHalfFire: 'Halfway to FIRE',
+  milestoneFire: 'FIRE',
+  milestoneReached: 'Reached!',
+  milestoneYearsAway: (y) => `~${y}y away`,
+  milestoneAtAge: (age) => `Age ${age}`,
+
+  // ─── Inflation Toggle ───
+  nominalValues: 'Nominal',
+  realValues: "Today's value",
+
+  // ─── Share / Export ───
+  shareResults: 'Share',
+  copyLink: 'Copy Link',
+  linkCopied: 'Link copied!',
+
+  // ─── Currency ───
+  currency: 'Currency',
+
+  // ─── Profiles ───
+  profiles: 'Profiles',
+  saveProfile: 'Save',
+  loadProfile: 'Load',
+  deleteProfile: 'Delete',
+  profileName: 'Profile name',
+  defaultProfileName: 'My Plan',
+  noSavedProfiles: 'No saved profiles',
+  profileSaved: 'Profile saved!',
 
   // ─── Formatters ───
   years: 'years',

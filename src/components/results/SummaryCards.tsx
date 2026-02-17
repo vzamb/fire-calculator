@@ -52,7 +52,7 @@ export function SummaryCards({ result }: SummaryCardsProps) {
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10',
       getValue: (r) => formatYears(r.yearsToFire),
-      getSubtext: (r) => t.investingPerMonth(Math.round(r.monthlySavings).toLocaleString('de-DE')),
+      getSubtext: (r) => t.investingPerMonth(formatCurrency(Math.round(r.monthlySavings))),
       tooltip: t.timeToFireTooltip,
     },
     {

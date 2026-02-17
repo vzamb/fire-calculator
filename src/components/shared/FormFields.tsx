@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Input } from '@/components/ui/Input';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/utils';
+import { getCurrencySymbol } from '@/lib/formatters';
 
 interface FormFieldProps {
   label: string;
@@ -46,7 +47,7 @@ export function CurrencyInput({
         value={value || ''}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
         placeholder={placeholder}
-        icon={<span className="text-sm font-medium">€</span>}
+        icon={<span className="text-sm font-medium">{getCurrencySymbol()}</span>}
         min={0}
       />
     </FormField>

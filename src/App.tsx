@@ -4,14 +4,22 @@ import { InputPanel } from '@/components/layout/InputPanel';
 import { ResultsDashboard } from '@/components/results/ResultsDashboard';
 import { useFireStore } from '@/store/fireStore';
 import { I18nContext, getTranslations } from '@/lib/i18n';
+import { extractSharedInputs } from '@/lib/sharing';
 
 function App() {
-  const { theme, setTheme, locale } = useFireStore();
+  const { theme, setTheme, locale, setInputs } = useFireStore();
   const t = getTranslations(locale);
 
   // Apply theme on mount
   useEffect(() => {
     setTheme(theme);
+    // Check for shared inputs in URL
+    const shared = extractSharedInputs();
+    if (shared) {
+      setInputs(shared);
+      // Clean the hash
+      window.history.replaceState(null, '', window.location.pathname);
+    }
   }, []);
 
   return (

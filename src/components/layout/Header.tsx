@@ -1,15 +1,26 @@
-import { Moon, Sun, RotateCcw } from 'lucide-react';
+import { useState } from 'react';
+import { Moon, Sun, RotateCcw, Share2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useFireStore } from '@/store/fireStore';
 import { useT } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n/types';
+import { generateShareUrl } from '@/lib/sharing';
 
 export function Header() {
-  const { theme, setTheme, resetInputs, locale, setLocale } = useFireStore();
+  const { theme, setTheme, resetInputs, locale, setLocale, currency, setCurrency, inputs } = useFireStore();
   const t = useT();
+  const [copied, setCopied] = useState(false);
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
+
+  const handleShare = async () => {
+    const url = generateShareUrl(inputs);
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    // Clean hash from URL silently
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -34,6 +45,16 @@ export function Header() {
 
         <div className="flex items-center gap-1">
           <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className="h-8 rounded-md border border-border bg-background px-2 text-xs font-medium text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+          >
+            <option value="EUR">€ EUR</option>
+            <option value="USD">$ USD</option>
+            <option value="GBP">£ GBP</option>
+            <option value="CHF">CHF</option>
+          </select>
+          <select
             value={locale}
             onChange={(e) => setLocale(e.target.value as Locale)}
             className="h-8 rounded-md border border-border bg-background px-2 text-xs font-medium text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
@@ -41,6 +62,18 @@ export function Header() {
             <option value="en">🇬🇧 English</option>
             <option value="it">🇮🇹 Italiano</option>
           </select>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleShare}
+            className="text-muted-foreground text-xs"
+          >
+            {copied ? (
+              <><Check className="w-3.5 h-3.5 mr-1 text-emerald-500" /><span className="text-emerald-500">{t.linkCopied}</span></>
+            ) : (
+              <><Share2 className="w-3.5 h-3.5 mr-1" />{t.shareResults}</>
+            )}
+          </Button>
           <Button
             variant="ghost"
             size="sm"

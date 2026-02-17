@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useFireStore } from '@/store/fireStore';
 import { calculateFire } from '@/lib/calculator';
-import { formatCurrency, formatYears } from '@/lib/formatters';
+import { formatCurrency, formatYears, getCurrencySymbol } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { Sparkles, Minus, Plus } from 'lucide-react';
 import { useT } from '@/lib/i18n';
@@ -30,8 +30,8 @@ const SCENARIOS: ScenarioConfig[] = [
     step: 50,
     min: -1000,
     max: 2000,
-    unit: '€/mo',
-    format: (v) => `${v >= 0 ? '+' : ''}${v}`,
+    unit: '/mo',
+    format: (v) => `${v >= 0 ? '+' : ''}${getCurrencySymbol()}${Math.abs(v)}`,
     apply: (inputs, value) => {
       inputs.fireGoals.monthlyInvestment += value;
     },

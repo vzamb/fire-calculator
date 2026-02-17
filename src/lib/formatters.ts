@@ -1,18 +1,40 @@
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  EUR: '€',
+  USD: '$',
+  GBP: '£',
+  CHF: 'CHF ',
+};
+
+let _activeCurrency = 'EUR';
+
+export function setActiveCurrency(currency: string) {
+  _activeCurrency = currency;
+}
+
+export function getActiveCurrency(): string {
+  return _activeCurrency;
+}
+
+export function getCurrencySymbol(): string {
+  return CURRENCY_SYMBOLS[_activeCurrency] ?? _activeCurrency + ' ';
+}
+
 export const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('de-DE', {
     style: 'currency',
-    currency: 'EUR',
+    currency: _activeCurrency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
 };
 
 export const formatCurrencyCompact = (value: number): string => {
+  const sym = CURRENCY_SYMBOLS[_activeCurrency] ?? _activeCurrency + ' ';
   if (value >= 1_000_000) {
-    return `€${(value / 1_000_000).toFixed(1)}M`;
+    return `${sym}${(value / 1_000_000).toFixed(1)}M`;
   }
   if (value >= 1_000) {
-    return `€${(value / 1_000).toFixed(0)}k`;
+    return `${sym}${(value / 1_000).toFixed(0)}k`;
   }
   return formatCurrency(value);
 };

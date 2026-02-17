@@ -12,6 +12,7 @@ import { RISK_PROFILES, FIRE_TYPES } from '@/lib/constants';
 import type { RiskProfile, FireType, Debt, FutureExpense, FutureIncome } from '@/types';
 import { formatCurrency } from '@/lib/formatters';
 import { useT } from '@/lib/i18n';
+import { ProfileManager } from './ProfileManager';
 
 // ─── Collapsible Section Shell ───
 function Section({
@@ -99,23 +100,23 @@ export function InputPanel() {
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
           <span className="text-muted-foreground">{t.income}</span>
           <span className="text-right font-medium text-emerald-500">
-            +€{totalMonthlyIncome.toLocaleString('de-DE')}
+            +{formatCurrency(totalMonthlyIncome)}
           </span>
           <span className="text-muted-foreground">{t.livingExpenses}</span>
           <span className="text-right font-medium text-red-400">
-            −€{expenses.monthlyExpenses.toLocaleString('de-DE')}
+            −{formatCurrency(expenses.monthlyExpenses)}
           </span>
           {totalDebtPayments > 0 && (
             <>
               <span className="text-muted-foreground">{t.debtPayments}</span>
               <span className="text-right font-medium text-red-400">
-                −€{totalDebtPayments.toLocaleString('de-DE')}
+                −{formatCurrency(totalDebtPayments)}
               </span>
             </>
           )}
           <span className="text-muted-foreground">{t.investing}</span>
           <span className="text-right font-medium text-primary">
-            −€{fireGoals.monthlyInvestment.toLocaleString('de-DE')}
+            −{formatCurrency(fireGoals.monthlyInvestment)}
           </span>
           <div className="col-span-2 border-t border-border my-1" />
           <span className="text-muted-foreground font-medium">{t.remaining}</span>
@@ -125,7 +126,7 @@ export function InputPanel() {
               ? 'text-emerald-500'
               : 'text-destructive'
           )}>
-            €{(totalMonthlyIncome - expenses.monthlyExpenses - totalDebtPayments - fireGoals.monthlyInvestment).toLocaleString('de-DE')}
+            {formatCurrency(totalMonthlyIncome - expenses.monthlyExpenses - totalDebtPayments - fireGoals.monthlyInvestment)}
           </span>
         </div>
 
@@ -138,7 +139,7 @@ export function InputPanel() {
             step={50}
             value={fireGoals.monthlyInvestment}
             onChange={(v) => updateFireGoals({ monthlyInvestment: v })}
-            formatValue={(v) => `€${v.toLocaleString('de-DE')}`}
+            formatValue={(v) => formatCurrency(v)}
           />
           {fireGoals.monthlyInvestment > availableToInvest && (
             <p className="text-xs text-amber-500 mt-1">
@@ -183,7 +184,7 @@ export function InputPanel() {
         iconColor="text-emerald-500"
         iconBg="bg-emerald-500/10"
         title={t.incomeSection}
-        summary={`€${totalMonthlyIncome.toLocaleString('de-DE')}/${t.mo} ${t.net}`}
+        summary={`${formatCurrency(totalMonthlyIncome)}/${t.mo} ${t.net}`}
       >
         <CurrencyInput
           label={t.monthlyNetSalary}
@@ -291,6 +292,9 @@ export function InputPanel() {
 
       {/* ─── FIRE Goals ─── */}
       <GoalsSection />
+
+      {/* ─── Profiles ─── */}
+      <ProfileManager />
     </div>
   );
 }
@@ -310,7 +314,7 @@ function ExpensesSection() {
       iconColor="text-rose-500"
       iconBg="bg-rose-500/10"
       title={t.expensesSection}
-      summary={`€${expenses.monthlyExpenses.toLocaleString('de-DE')}/${t.mo}`}
+      summary={`${formatCurrency(expenses.monthlyExpenses)}/${t.mo}`}
     >
       <CurrencyInput
         label={t.monthlyLivingExpenses}
@@ -343,7 +347,7 @@ function ExpensesSection() {
           {breakdownTotal !== expenses.monthlyExpenses && (
             <div className="col-span-2 flex items-center justify-between bg-primary/5 border border-primary/20 rounded-lg p-2.5">
               <p className="text-xs text-muted-foreground">
-                {t.breakdownLabel}: <span className="font-semibold text-foreground">€{breakdownTotal.toLocaleString('de-DE')}</span>
+                {t.breakdownLabel}: <span className="font-semibold text-foreground">{formatCurrency(breakdownTotal)}</span>
               </p>
               <button
                 onClick={() => updateExpenses({ monthlyExpenses: breakdownTotal })}
@@ -479,7 +483,7 @@ function AssetsSection() {
             {debt.monthlyPayment > 0 && debt.remainingYears > 0 && (
               <p className="text-xs text-muted-foreground">
                 {t.totalRemaining}: <span className="font-medium text-foreground">
-                  €{(debt.monthlyPayment * debt.remainingYears * 12).toLocaleString('de-DE')}
+                  {formatCurrency(debt.monthlyPayment * debt.remainingYears * 12)}
                 </span>
                 {' · '}{t.endsIn} <span className="font-medium text-emerald-500">
                   {new Date().getFullYear() + debt.remainingYears}
@@ -729,7 +733,7 @@ function GoalsSection() {
         value={expenses.postRetirementExpensePercent}
         onChange={(v) => updateExpenses({ postRetirementExpensePercent: v })}
         suffix="%"
-        formatValue={(v) => `${v}% (€${Math.round((expenses.monthlyExpenses * v) / 100).toLocaleString('de-DE')}/mo)`}
+        formatValue={(v) => `${v}% (${formatCurrency(Math.round((expenses.monthlyExpenses * v) / 100))}/mo)`}
       />
 
       <Slider

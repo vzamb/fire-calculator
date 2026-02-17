@@ -4,6 +4,7 @@ import type { FireInputs, FireResult, Theme } from '@/types';
 import type { Locale } from '@/lib/i18n';
 import { DEFAULT_INPUTS } from '@/lib/constants';
 import { calculateFire } from '@/lib/calculator';
+import { setActiveCurrency } from '@/lib/formatters';
 
 interface FireStore {
   // Inputs
@@ -23,6 +24,14 @@ interface FireStore {
   // UI State — which input sections are expanded
   expandedSections: Set<string>;
   toggleSection: (section: string) => void;
+
+  // UI State — show real (inflation-adjusted) values
+  showRealValues: boolean;
+  toggleRealValues: () => void;
+
+  // Currency
+  currency: string;
+  setCurrency: (currency: string) => void;
 
   // Theme
   theme: Theme;
@@ -107,6 +116,15 @@ export const useFireStore = create<FireStore>()(
           return { expandedSections: next };
         }),
 
+      showRealValues: false,
+      toggleRealValues: () => set((state) => ({ showRealValues: !state.showRealValues })),
+
+      currency: 'EUR',
+      setCurrency: (currency) => {
+        setActiveCurrency(currency);
+        set({ currency });
+      },
+
       locale: 'en',
       setLocale: (locale) => set({ locale }),
 
@@ -131,12 +149,15 @@ export const useFireStore = create<FireStore>()(
         inputs: state.inputs,
         theme: state.theme,
         locale: state.locale,
+        currency: state.currency,
       }),
       onRehydrateStorage: () => {
         return (state) => {
           if (state) {
             // Recalculate after rehydration from localStorage
             state.result = recalculate(state.inputs);
+            // Sync currency to formatter module
+            setActiveCurrency(state.currency);
           }
         };
       },

@@ -14,6 +14,8 @@ import { formatCurrencyCompact, formatCurrency } from '@/lib/formatters';
 import type { FireResult } from '@/types';
 import { useT } from '@/lib/i18n';
 import { TrendingUp } from 'lucide-react';
+import { useFireStore } from '@/store/fireStore';
+import { cn } from '@/lib/utils';
 
 interface ProjectionChartProps {
   result: FireResult;
@@ -21,15 +23,24 @@ interface ProjectionChartProps {
 
 export function ProjectionChart({ result }: ProjectionChartProps) {
   const t = useT();
+  const { showRealValues, toggleRealValues, inputs } = useFireStore();
+  const inflation = inputs.expenses.annualInflationRate / 100;
   const isBridgeStrategy = result.bridgeGap > 0;
-  const data = result.yearlyProjections.map((p) => ({
+
+  const deflate = (value: number, yearIdx: number) =>
+    showRealValues ? value / Math.pow(1 + inflation, yearIdx) : value;
+
+  const data = result.yearlyProjections.map((p, idx) => ({
     age: p.age,
     year: p.year,
-    base: Math.round(p.portfolioValue),
-    optimistic: Math.round(p.portfolioOptimistic),
-    pessimistic: Math.round(p.portfolioPessimistic),
+    base: Math.round(deflate(p.portfolioValue, idx)),
+    optimistic: Math.round(deflate(p.portfolioOptimistic, idx)),
+    pessimistic: Math.round(deflate(p.portfolioPessimistic, idx)),
     isRetired: p.isRetired,
   }));
+
+  const fireYearIdx = result.yearlyProjections.findIndex((p) => p.age === result.fireAge);
+  const fireTarget = Math.round(deflate(result.fireNumber, fireYearIdx >= 0 ? fireYearIdx : 0));
 
   const fireProjection = result.yearlyProjections.find(
     (p) => p.age === result.fireAge
@@ -38,10 +49,23 @@ export function ProjectionChart({ result }: ProjectionChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-primary" />
-          {t.netWorthProjection}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-primary" />
+            {t.netWorthProjection}
+          </CardTitle>
+          <button
+            onClick={toggleRealValues}
+            className={cn(
+              'text-[11px] font-medium px-2.5 py-1 rounded-md border transition-colors',
+              showRealValues
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border text-muted-foreground hover:text-foreground'
+            )}
+          >
+            {showRealValues ? t.realValues : t.nominalValues}
+          </button>
+        </div>
         <p className="text-xs text-muted-foreground mt-1">
           {isBridgeStrategy ? t.netWorthProjectionDescBridge : t.netWorthProjectionDesc}
         </p>
@@ -125,7 +149,7 @@ export function ProjectionChart({ result }: ProjectionChartProps) {
 
               {/* FIRE Number reference line */}
               <ReferenceLine
-                y={result.fireNumber}
+                y={fireTarget}
                 stroke="hsl(24, 95%, 53%)"
                 strokeDasharray="6 4"
                 strokeWidth={1.5}

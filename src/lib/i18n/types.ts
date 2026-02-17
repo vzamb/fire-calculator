@@ -197,6 +197,54 @@ export interface Translations {
   later: (y: string) => string;
   same: string;
 
+  // ─── Monte Carlo ───
+  monteCarloTitle: string;
+  monteCarloDesc: string;
+  monteCarloSuccess: string;
+  monteCarloMedianAge: string;
+  monteCarloSimulations: string;
+  monteCarloP5: string;
+  monteCarloP25: string;
+  monteCarloMedian: string;
+  monteCarloP75: string;
+  monteCarloP95: string;
+  monteCarloFootnote: string;
+  monteCarloTargetAge: string;
+
+  // ─── Milestone Timeline ───
+  milestoneTimeline: string;
+  milestoneTimelineDesc: string;
+  milestoneEmergencyFund: string;
+  milestone100k: string;
+  milestoneCoastFire: string;
+  milestoneHalfFire: string;
+  milestoneFire: string;
+  milestoneReached: string;
+  milestoneYearsAway: (y: number) => string;
+  milestoneAtAge: (age: number) => string;
+
+  // ─── Inflation Toggle ───
+  nominalValues: string;
+  realValues: string;
+
+  // ─── Share / Export ───
+  shareResults: string;
+  copyLink: string;
+  linkCopied: string;
+
+  // ─── Currency ───
+  currency: string;
+
+  // ─── Profiles ───
+  profiles: string;
+  saveProfile: string;
+  loadProfile: string;
+  deleteProfile: string;
+  profileName: string;
+  defaultProfileName: string;
+  noSavedProfiles: string;
+  profileSaved: string;
+
   // ─── Formatters ───
   years: string;
   months: string;
