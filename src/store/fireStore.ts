@@ -4,7 +4,7 @@ import type { FireInputs, FireResult, Theme } from '@/types';
 import type { Locale } from '@/lib/i18n';
 import { DEFAULT_INPUTS } from '@/lib/constants';
 import { calculateFire } from '@/lib/calculator';
-import { setActiveCurrency } from '@/lib/formatters';
+import { setActiveCurrency, setActiveLocale } from '@/lib/formatters';
 
 interface FireStore {
   // Inputs
@@ -126,7 +126,10 @@ export const useFireStore = create<FireStore>()(
       },
 
       locale: 'en',
-      setLocale: (locale) => set({ locale }),
+      setLocale: (locale) => {
+        setActiveLocale(locale);
+        set({ locale });
+      },
 
       theme: 'dark',
       setTheme: (theme) => {
@@ -156,8 +159,9 @@ export const useFireStore = create<FireStore>()(
           if (state) {
             // Recalculate after rehydration from localStorage
             state.result = recalculate(state.inputs);
-            // Sync currency to formatter module
+            // Sync currency and locale to formatter module
             setActiveCurrency(state.currency);
+            setActiveLocale(state.locale);
           }
         };
       },

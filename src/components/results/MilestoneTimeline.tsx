@@ -23,7 +23,7 @@ export function MilestoneTimeline() {
     const projections = result.yearlyProjections;
     const currentAge = inputs.personalInfo.currentAge;
     const expenses = inputs.expenses.monthlyExpenses;
-    const emergencyTarget = expenses * 6; // 6 months emergency fund
+    const emergencyTarget = expenses * inputs.assets.emergencyFundMonths;
     const halfFire = result.fireNumber / 2;
 
     const findAge = (target: number): { reached: boolean; age: number | null } => {

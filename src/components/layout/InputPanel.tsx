@@ -11,7 +11,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { RISK_PROFILES, FIRE_TYPES } from '@/lib/constants';
 import type { RiskProfile, FireType, Debt, FutureExpense, FutureIncome } from '@/types';
 import { formatCurrency } from '@/lib/formatters';
-import { useT } from '@/lib/i18n';
+import { useT, tKey } from '@/lib/i18n';
 import { ProfileManager } from './ProfileManager';
 
 // ─── Collapsible Section Shell ───
@@ -263,7 +263,7 @@ export function InputPanel() {
                   : 'border-border hover:border-primary/30'
               )}
             >
-              <span className="text-[11px] font-semibold leading-tight truncate w-full">{(t as any)[key]}</span>
+              <span className="text-[11px] font-semibold leading-tight truncate w-full">{tKey(t, key)}</span>
               <span className="text-[10px] text-muted-foreground">~{profile.return}%</span>
             </button>
           ))}

@@ -5,7 +5,7 @@ import { calculateFire } from '@/lib/calculator';
 import { formatCurrency, formatYears, getCurrencySymbol } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { Sparkles, Minus, Plus } from 'lucide-react';
-import { useT } from '@/lib/i18n';
+import { useT, tKey } from '@/lib/i18n';
 import type { FireInputs } from '@/types';
 
 interface ScenarioConfig {
@@ -185,7 +185,7 @@ export function ScenarioComparison() {
                       <span className="text-sm">{scenario.emoji}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">
-                          {(t as any)[scenario.labelKey]}
+                          {tKey(t, scenario.labelKey)}
                         </p>
                         <div className="flex items-center gap-1 mt-1">
                           <button

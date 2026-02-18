@@ -1,4 +1,5 @@
 import type { FireInputs } from '@/types';
+import { requiredPortfolio, survivesDrawdown } from './financial';
 
 export interface MonteCarloResult {
   /** Percentile curves: age → portfolio value */
@@ -54,75 +55,6 @@ function createRandn(rng: () => number): () => number {
 }
 
 /**
- * Required portfolio using gap+residual model (mirrors calculator.ts).
- */
-function requiredPortfolio(
-  retExpenses: number,
-  pensionAnnual: number,
-  gapYears: number,
-  swr: number,
-  realReturn: number,
-): number {
-  const retNet = retExpenses - pensionAnnual;
-  const postPensionPortfolio = Math.max(0, retNet) / swr;
-  if (gapYears <= 0) return postPensionPortfolio;
-  let gapCost = 0;
-  for (let y = 0; y < gapYears; y++) {
-    gapCost += retExpenses / Math.pow(1 + realReturn, y);
-  }
-  const residualPV = postPensionPortfolio / Math.pow(1 + realReturn, gapYears);
-  return gapCost + residualPV;
-}
-
-/**
- * Forward-simulate drawdown from a candidate FIRE age using DETERMINISTIC returns.
- * Returns true if portfolio stays ≥ 0 throughout (bridge strategy validation).
- * Uses mean return (not random) — same approach as the main calculator's survivesDrawdown.
- */
-function survivesDrawdown(
-  startPortfolio: number,
-  retExpenses: number,
-  inflation: number,
-  netReturn: number,
-  pensionMonthly: number,
-  pensionStartAge: number,
-  fireAge: number,
-  fireYearIdx: number,
-  lifeExpectancy: number,
-  debts: Array<{ monthlyPayment: number; yearsLeft: number }>,
-  futureIncomes: Array<{ amount: number; yearsFromNow: number }>,
-  futureExpenses: Array<{ amount: number; yearsFromNow: number }>,
-): boolean {
-  let p = startPortfolio;
-  let exp = retExpenses;
-  const totalYears = lifeExpectancy - fireAge;
-  for (let y = 0; y <= totalYears; y++) {
-    const age = fireAge + y;
-    const absYear = fireYearIdx + y;
-    const pensionIncome = age >= pensionStartAge
-      ? pensionMonthly * 12 * Math.pow(1 + inflation, absYear)
-      : 0;
-    let debtPay = 0;
-    for (const d of debts) {
-      if (d.yearsLeft > y) debtPay += d.monthlyPayment * 12;
-    }
-    let oneTime = 0;
-    for (const inc of futureIncomes) {
-      if (inc.yearsFromNow === absYear) oneTime += inc.amount;
-    }
-    for (const ex of futureExpenses) {
-      if (ex.yearsFromNow === absYear) oneTime -= ex.amount;
-    }
-    const totalSpend = exp + debtPay;
-    const withdrawal = Math.max(0, totalSpend - pensionIncome);
-    p += p * netReturn - withdrawal + oneTime;
-    if (p < 0) return false;
-    exp *= 1 + inflation;
-  }
-  return true;
-}
-
-/**
  * Run Monte Carlo simulation with randomized annual returns.
  * Uses a seeded PRNG so identical inputs always produce identical results.
  * Volatility ~12% (diversified portfolio). Bridge strategy included.
@@ -146,8 +78,9 @@ export function runMonteCarlo(
   } = inputs;
 
   const grossReturn = investmentStrategy.expectedAnnualReturn / 100;
+  const annualFees = investmentStrategy.annualFees / 100;
   const capitalGainsTax = investmentStrategy.capitalGainsTaxRate / 100;
-  const meanReturn = grossReturn * (1 - capitalGainsTax);
+  const meanReturn = (grossReturn - annualFees) * (1 - capitalGainsTax);
   // Diversified portfolio volatility (~12%); pure equity would be ~16%
   const volatility = 0.12;
 
@@ -159,7 +92,7 @@ export function runMonteCarlo(
   const monthlyInvestment = fireGoals.monthlyInvestment;
 
   const maxYears = personalInfo.lifeExpectancy - personalInfo.currentAge + 1;
-  const startPortfolio = assets.investedAssets + assets.cashSavings;
+  const startPortfolio = assets.investedAssets + assets.cashSavings + assets.otherAssets;
 
   // Deterministic seed from inputs + targetFireAge — same params ⇒ same results
   const seedStr = JSON.stringify(inputs) + (targetFireAge ?? '');

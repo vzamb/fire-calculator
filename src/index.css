@@ -102,10 +102,4 @@
     background: hsl(var(--border));
     border-radius: 3px;
   }
-  .glass {
-    @apply bg-white/80 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10;
-  }
-  .glass-card {
-    @apply bg-white/60 dark:bg-white/[0.03] backdrop-blur-lg border border-white/30 dark:border-white/[0.06] rounded-xl;
-  }
 }

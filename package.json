@@ -1,12 +1,26 @@
 {
   "name": "fire-calculator",
+  "description": "FIRE (Financial Independence, Retire Early) calculator with Monte Carlo simulations, interactive charts, and multi-language support",
   "private": true,
   "version": "1.0.0",
+  "license": "MIT",
   "type": "module",
+  "keywords": [
+    "fire",
+    "financial-independence",
+    "retire-early",
+    "calculator",
+    "monte-carlo",
+    "personal-finance",
+    "react",
+    "typescript"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
@@ -20,13 +34,17 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "jsdom": "^28.1.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.6.3",
-    "vite": "^6.0.5"
+    "vite": "^6.0.5",
+    "vitest": "^4.0.18"
   }
 }

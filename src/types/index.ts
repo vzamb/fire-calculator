@@ -139,24 +139,5 @@ export interface FireResult {
   debtCostToday: number; // remaining debts at FIRE add this much (today's euros)
 }
 
-// ─── Scenario ───
-export interface Scenario {
-  id: string;
-  name: string;
-  description: string;
-  color: string;
-  adjustment: Partial<FireInputs>;
-  result: FireResult | null;
-  enabled: boolean;
-}
-
-// ─── Step ───
-export interface Step {
-  id: number;
-  title: string;
-  description: string;
-  icon: string;
-}
-
 // ─── Theme ───
 export type Theme = 'light' | 'dark' | 'system';

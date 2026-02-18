@@ -1,97 +1,5 @@
 import type { FireInputs, FireResult, YearlyProjection } from '@/types';
-
-/** Present value of an annuity: n payments at rate r */
-function annuityPV(n: number, r: number): number {
-  if (n <= 0) return 0;
-  if (r < 0.0001) return n;
-  return (1 - Math.pow(1 + r, -n)) / r;
-}
-
-/**
- * Compute the required portfolio at a potential FIRE age, accounting for:
- *  1. Gap years (FIRE → pension start): full expense withdrawals
- *  2. Post-pension years: only (expenses − pension) withdrawals
- *  3. Uses SWR-based perpetuity for post-pension phase
- *
- * All values in TODAY's real euros.
- */
-function requiredPortfolio(
-  retExpensesToday: number,
-  pensionAnnualToday: number,
-  gapYears: number,
-  swr: number,
-  realReturn: number,
-): number {
-  if (pensionAnnualToday <= 0) {
-    // No pension: standard SWR target
-    return retExpensesToday / swr;
-  }
-  // Post-pension: portfolio only covers the shortfall
-  const shortfall = Math.max(0, retExpensesToday - pensionAnnualToday);
-  const postPensionPortfolio = shortfall / swr;
-
-  if (gapYears <= 0) {
-    // Already past pension age
-    return postPensionPortfolio;
-  }
-  // Gap years: full expenses from portfolio (annuity)
-  // Plus: need postPensionPortfolio left at end of gap (PV)
-  const gapCost = retExpensesToday * annuityPV(gapYears, realReturn);
-  const residualPV = postPensionPortfolio / Math.pow(1 + realReturn, gapYears);
-  return gapCost + residualPV;
-}
-
-/**
- * Forward-simulate drawdown from a candidate FIRE age to life expectancy.
- * Returns true if portfolio stays ≥ 0 throughout.
- * This is used to validate bridge strategy: can the portfolio survive
- * until the bridge income (inheritance, etc.) actually arrives?
- */
-function survivesDrawdown(
-  startPortfolio: number,
-  retExpenses: number,        // nominal annual expenses at retirement
-  inflation: number,
-  netReturn: number,
-  pensionMonthly: number,
-  pensionStartAge: number,
-  fireAge: number,
-  fireYearIdx: number,        // year index from simulation start
-  lifeExpectancy: number,
-  debts: Array<{ monthlyPayment: number; yearsLeft: number }>,
-  futureIncomes: Array<{ amount: number; yearsFromNow: number }>,
-  futureExpenses: Array<{ amount: number; yearsFromNow: number }>,
-): boolean {
-  let p = startPortfolio;
-  let exp = retExpenses;
-  const totalYears = lifeExpectancy - fireAge;
-  for (let y = 0; y <= totalYears; y++) {
-    const age = fireAge + y;
-    const absYear = fireYearIdx + y;
-    // Pension
-    const pensionIncome = age >= pensionStartAge
-      ? pensionMonthly * 12 * Math.pow(1 + inflation, absYear)
-      : 0;
-    // Debts
-    let debtPay = 0;
-    for (const d of debts) {
-      if (d.yearsLeft > y) debtPay += d.monthlyPayment * 12;
-    }
-    // One-time events at this absolute year
-    let oneTime = 0;
-    for (const inc of futureIncomes) {
-      if (inc.yearsFromNow === absYear) oneTime += inc.amount;
-    }
-    for (const ex of futureExpenses) {
-      if (ex.yearsFromNow === absYear) oneTime -= ex.amount;
-    }
-    const totalSpend = exp + debtPay;
-    const withdrawal = Math.max(0, totalSpend - pensionIncome);
-    p += p * netReturn - withdrawal + oneTime;
-    if (p < 0) return false;
-    exp *= 1 + inflation;
-  }
-  return true;
-}
+import { requiredPortfolio, survivesDrawdown } from './financial';
 
 export function calculateFire(inputs: FireInputs): FireResult {
   const {
@@ -107,9 +15,10 @@ export function calculateFire(inputs: FireInputs): FireResult {
   const swr = fireGoals.safeWithdrawalRate / 100;
   const postRetirementFactor = expenses.postRetirementExpensePercent / 100;
   const grossReturn = investmentStrategy.expectedAnnualReturn / 100;
+  const annualFees = investmentStrategy.annualFees / 100;
   const capitalGainsTax = investmentStrategy.capitalGainsTaxRate / 100;
-  // Capital gains tax applies only to growth, so net return = gross × (1 − tax)
-  const netReturn = grossReturn * (1 - capitalGainsTax);
+  // Net return = (gross - fees) × (1 − capital gains tax)
+  const netReturn = (grossReturn - annualFees) * (1 - capitalGainsTax);
   const inflation = expenses.annualInflationRate / 100;
   const realReturn = Math.max(0.001, (1 + netReturn) / (1 + inflation) - 1);
 
@@ -130,7 +39,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
   const maxYears = personalInfo.lifeExpectancy - personalInfo.currentAge + 1;
   const yearlyProjections: YearlyProjection[] = [];
 
-  let portfolio = assets.investedAssets + assets.cashSavings;
+  let portfolio = assets.investedAssets + assets.cashSavings + assets.otherAssets;
   let portfolioOpt = portfolio;
   let portfolioPess = portfolio;
   let cumulativeContributions = portfolio;

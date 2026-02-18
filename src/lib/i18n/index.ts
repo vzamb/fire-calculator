@@ -11,6 +11,11 @@ export function getTranslations(locale: Locale): Translations {
   return translations[locale];
 }
 
+/** Type-safe dynamic translation key lookup */
+export function tKey(t: Translations, key: string): string {
+  return (t as unknown as Record<string, unknown>)[key] as string ?? key;
+}
+
 export const I18nContext = createContext<Translations>(en);
 
 export function useT(): Translations {

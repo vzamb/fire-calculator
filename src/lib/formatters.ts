@@ -11,16 +11,19 @@ export function setActiveCurrency(currency: string) {
   _activeCurrency = currency;
 }
 
-export function getActiveCurrency(): string {
-  return _activeCurrency;
-}
-
 export function getCurrencySymbol(): string {
   return CURRENCY_SYMBOLS[_activeCurrency] ?? _activeCurrency + ' ';
 }
 
+let _activeLocale = 'en';
+
+export function setActiveLocale(locale: string) {
+  _activeLocale = locale;
+}
+
 export const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('de-DE', {
+  const localeMap: Record<string, string> = { en: 'en-GB', it: 'it-IT' };
+  return new Intl.NumberFormat(localeMap[_activeLocale] ?? 'en-GB', {
     style: 'currency',
     currency: _activeCurrency,
     minimumFractionDigits: 0,
@@ -60,8 +63,4 @@ export const formatDate = (date: Date, locale?: string): string => {
   }).format(date);
 };
 
-export const parseNumber = (value: string): number => {
-  const cleaned = value.replace(/[^0-9.,\-]/g, '').replace(',', '.');
-  const num = parseFloat(cleaned);
-  return isNaN(num) ? 0 : num;
-};
+
