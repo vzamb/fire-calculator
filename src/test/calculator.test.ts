@@ -22,6 +22,8 @@ function makeInputs(overrides: Partial<{
   pensionStartAge: number;
   postRetirementPercent: number;
 }>): FireInputs {
+  const pensionMonthly = overrides.pensionMonthly ?? 0;
+  const pensionStartAge = overrides.pensionStartAge ?? 67;
   return {
     personalInfo: {
       currentAge: overrides.age ?? 30,
@@ -31,8 +33,9 @@ function makeInputs(overrides: Partial<{
       monthlyNetSalary: overrides.salary ?? 3000,
       annualSalaryGrowth: 0,
       additionalMonthlyIncome: 0,
-      pensionMonthlyAmount: overrides.pensionMonthly ?? 0,
-      pensionStartAge: overrides.pensionStartAge ?? 67,
+      pensions: pensionMonthly > 0
+        ? [{ id: 'test', name: 'Test Pension', monthlyAmount: pensionMonthly, startAge: pensionStartAge }]
+        : [],
     },
     expenses: {
       monthlyExpenses: overrides.expenses ?? 2000,

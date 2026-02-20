@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Plus, Trash2 } from 'lucide-react';
 import { RISK_PROFILES, FIRE_TYPES } from '@/lib/constants';
-import type { RiskProfile, FireType, Debt, FutureExpense, FutureIncome } from '@/types';
+import type { RiskProfile, FireType, Debt, FutureExpense, FutureIncome, Pension } from '@/types';
 import { formatCurrency } from '@/lib/formatters';
 import { useT, tKey } from '@/lib/i18n';
 import { ProfileManager } from './ProfileManager';
@@ -207,23 +207,68 @@ export function InputPanel() {
           onChange={(v) => updateIncome({ additionalMonthlyIncome: v })}
         />
         <div className="pt-3 border-t border-border space-y-4">
-          <p className="text-xs font-medium text-muted-foreground">{t.futurePension}</p>
-          <div className="grid grid-cols-2 gap-4">
-            <CurrencyInput
-              label={t.monthlyPension}
-              tooltip={t.monthlyPensionTooltip}
-              value={income.pensionMonthlyAmount}
-              onChange={(v) => updateIncome({ pensionMonthlyAmount: v })}
-            />
-            <NumberInput
-              label={t.pensionStartAge}
-              value={income.pensionStartAge}
-              onChange={(v) => updateIncome({ pensionStartAge: v })}
-              suffix=" yrs"
-              min={50}
-              max={75}
-            />
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-muted-foreground">{t.futurePension}</p>
+            <Button variant="outline" size="sm" onClick={() => {
+              const pension: Pension = {
+                id: crypto.randomUUID(),
+                name: '',
+                monthlyAmount: 0,
+                startAge: 67,
+              };
+              updateIncome({ pensions: [...income.pensions, pension] });
+            }} className="h-7 text-xs">
+              <Plus className="w-3 h-3 mr-1" /> {t.add}
+            </Button>
           </div>
+
+          {income.pensions.length === 0 && (
+            <p className="text-xs text-muted-foreground/60 text-center py-2">{t.noPensions}</p>
+          )}
+
+          {income.pensions.map((pension, i) => (
+            <div key={pension.id} className="border border-border rounded-lg p-3 space-y-3 animate-slide-up">
+              <div className="flex items-center justify-between">
+                <Input
+                  type="text"
+                  value={pension.name}
+                  onChange={(e) => updateIncome({
+                    pensions: income.pensions.map(p => p.id === pension.id ? { ...p, name: e.target.value } : p),
+                  })}
+                  placeholder={t.pensionPlaceholder(i + 1)}
+                  className="border-0 bg-transparent p-0 h-auto text-sm font-medium focus-visible:ring-0"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => updateIncome({ pensions: income.pensions.filter(p => p.id !== pension.id) })}
+                  className="text-destructive hover:text-destructive h-7 w-7"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <CurrencyInput
+                  label={t.monthlyPension}
+                  tooltip={t.monthlyPensionTooltip}
+                  value={pension.monthlyAmount}
+                  onChange={(v) => updateIncome({
+                    pensions: income.pensions.map(p => p.id === pension.id ? { ...p, monthlyAmount: v } : p),
+                  })}
+                />
+                <NumberInput
+                  label={t.pensionStartAge}
+                  value={pension.startAge}
+                  onChange={(v) => updateIncome({
+                    pensions: income.pensions.map(p => p.id === pension.id ? { ...p, startAge: v } : p),
+                  })}
+                  suffix=" yrs"
+                  min={50}
+                  max={75}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </Section>
 

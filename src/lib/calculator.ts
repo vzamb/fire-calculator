@@ -1,5 +1,13 @@
 import type { FireInputs, FireResult, YearlyProjection } from '@/types';
+import type { PensionEntry } from './financial';
 import { requiredPortfolio, survivesDrawdown } from './financial';
+
+/** Build PensionEntry list from user input pensions */
+function toPensionEntries(inputs: FireInputs): PensionEntry[] {
+  return inputs.income.pensions
+    .filter(p => p.monthlyAmount > 0)
+    .map(p => ({ annualAmount: p.monthlyAmount * 12, startAge: p.startAge }));
+}
 
 export function calculateFire(inputs: FireInputs): FireResult {
   const {
@@ -26,6 +34,9 @@ export function calculateFire(inputs: FireInputs): FireResult {
   // This is the baseline: Annual retirement spending / SWR
   const baseAnnualExpenses = expenses.monthlyExpenses * 12;
   const fireNumberBaseToday = (baseAnnualExpenses * postRetirementFactor) / swr;
+
+  // Build pension entries once
+  const pensionEntries = toPensionEntries(inputs);
 
   const totalMonthlyIncome = income.monthlyNetSalary + income.additionalMonthlyIncome;
   const monthlyInvestment = fireGoals.monthlyInvestment;
@@ -80,10 +91,12 @@ export function calculateFire(inputs: FireInputs): FireResult {
     const totalAnnualIncome = (salary + additionalIncome) * 12;
 
     // ── Pension (inflation-adjusted — state pensions like INPS grow with CPI) ──
-    const pensionIncome =
-      age >= income.pensionStartAge
-        ? income.pensionMonthlyAmount * 12 * Math.pow(1 + inflation, i)
-        : 0;
+    let pensionIncome = 0;
+    for (const pen of pensionEntries) {
+      if (age >= pen.startAge) {
+        pensionIncome += pen.annualAmount * Math.pow(1 + inflation, i);
+      }
+    }
 
     // ── One-time expenses (deducted from portfolio) ──
     const oneTimeExpenses = fireGoals.futureExpenses
@@ -139,12 +152,10 @@ export function calculateFire(inputs: FireInputs): FireResult {
       // ── Check if FIRE achieved ──
       const inflationMultiplier = Math.pow(1 + inflation, i);
       const retExpensesToday = baseAnnualExpenses * postRetirementFactor;
-      const pensionAnnualBase = income.pensionMonthlyAmount * 12;
-      const gapYears = Math.max(0, income.pensionStartAge - age);
 
-      // Required portfolio in today's euros (gap + residual model)
+      // Required portfolio in today's euros (multi-pension gap + residual model)
       const reqToday = requiredPortfolio(
-        retExpensesToday, pensionAnnualBase, gapYears, swr, realReturn,
+        retExpensesToday, pensionEntries, age, swr, realReturn,
       );
 
       // Debt cost — PV of remaining fixed nominal payments
@@ -185,8 +196,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
             candidateRetExpenses,
             inflation,
             netReturn,
-            income.pensionMonthlyAmount,
-            income.pensionStartAge,
+            pensionEntries,
             age,
             i,
             personalInfo.lifeExpectancy,
@@ -260,9 +270,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
 
   // The FIRE number shown to the user is the adjusted target at the projected FIRE age.
   const retExpTdy = baseAnnualExpenses * postRetirementFactor;
-  const pensAnnTdy = income.pensionMonthlyAmount * 12;
-  const fireGap = Math.max(0, income.pensionStartAge - fireAge);
-  const adjustedFireNumberToday = requiredPortfolio(retExpTdy, pensAnnTdy, fireGap, swr, realReturn) + debtCostAtFire;
+  const adjustedFireNumberToday = requiredPortfolio(retExpTdy, pensionEntries, fireAge, swr, realReturn) + debtCostAtFire;
   const fireNumber = adjustedFireNumberToday * Math.pow(1 + inflation, yearsToFire);
 
   const fireDate = new Date();
@@ -271,12 +279,11 @@ export function calculateFire(inputs: FireInputs): FireResult {
   // ─── Coast FIRE calculation ───
   const coastTargetAge = 65;
   let coastFireAge = personalInfo.currentAge;
-  // Use same gap+residual model for coast target
-  const coastGapYears = Math.max(0, income.pensionStartAge - coastTargetAge);
+  // Use same multi-pension model for coast target
   const coastReqToday = requiredPortfolio(
     baseAnnualExpenses * postRetirementFactor,
-    income.pensionMonthlyAmount * 12,
-    coastGapYears,
+    pensionEntries,
+    coastTargetAge,
     swr,
     realReturn,
   );

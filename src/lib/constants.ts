@@ -9,8 +9,9 @@ export const DEFAULT_INCOME: IncomeInfo = {
   monthlyNetSalary: 2500,
   annualSalaryGrowth: 2,
   additionalMonthlyIncome: 0,
-  pensionMonthlyAmount: 800,
-  pensionStartAge: 67,
+  pensions: [
+    { id: 'default', name: 'State Pension', monthlyAmount: 800, startAge: 67 },
+  ],
 };
 
 export const DEFAULT_EXPENSES: ExpensesInfo = {

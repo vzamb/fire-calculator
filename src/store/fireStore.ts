@@ -157,6 +157,18 @@ export const useFireStore = create<FireStore>()(
       onRehydrateStorage: () => {
         return (state) => {
           if (state) {
+            // ── Migrate legacy single-pension format to pensions array ──
+            const income = state.inputs.income as unknown as Record<string, unknown>;
+            if (!Array.isArray(income.pensions)) {
+              const monthlyAmount = (income.pensionMonthlyAmount as number) ?? 0;
+              const startAge = (income.pensionStartAge as number) ?? 67;
+              income.pensions = monthlyAmount > 0
+                ? [{ id: 'migrated', name: '', monthlyAmount, startAge }]
+                : [];
+              delete income.pensionMonthlyAmount;
+              delete income.pensionStartAge;
+            }
+
             // Recalculate after rehydration from localStorage
             state.result = recalculate(state.inputs);
             // Sync currency and locale to formatter module

@@ -118,24 +118,28 @@ export function WithdrawalChart({ result }: WithdrawalChartProps) {
                 labelFormatter={(age) => `${t.ageLabel} ${age}`}
               />
 
-              {/* Pension start */}
-              {inputs.income.pensionStartAge > result.fireAge && (
-                <ReferenceLine
-                  x={inputs.income.pensionStartAge}
-                  stroke="hsl(160, 60%, 45%)"
-                  strokeDasharray="6 4"
-                  strokeWidth={1.5}
-                  label={{
-                    value: t.pension,
-                    position: 'insideTopRight',
-                    style: {
-                      fontSize: 10,
-                      fill: 'hsl(160, 60%, 45%)',
-                      fontWeight: 600,
-                    },
-                  }}
-                />
-              )}
+              {/* Pension start lines */}
+              {inputs.income.pensions
+                .filter(p => p.monthlyAmount > 0 && p.startAge > result.fireAge)
+                .map((p) => (
+                  <ReferenceLine
+                    key={p.id}
+                    x={p.startAge}
+                    stroke="hsl(160, 60%, 45%)"
+                    strokeDasharray="6 4"
+                    strokeWidth={1.5}
+                    label={{
+                      value: p.name || t.pension,
+                      position: 'insideTopRight',
+                      style: {
+                        fontSize: 10,
+                        fill: 'hsl(160, 60%, 45%)',
+                        fontWeight: 600,
+                      },
+                    }}
+                  />
+                ))
+              }
 
               <ReferenceLine
                 y={0}

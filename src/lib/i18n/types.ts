@@ -34,6 +34,8 @@ export interface Translations {
   monthlyPension: string;
   monthlyPensionTooltip: string;
   pensionStartAge: string;
+  noPensions: string;
+  pensionPlaceholder: (i: number) => string;
 
   // ─── Expenses ───
   expensesSection: string;
@@ -143,7 +145,7 @@ export interface Translations {
   explainerAdjustedBase: string;
   explainerInflation: (years: number) => string;
   explainerFinalTarget: string;
-  pensionCreditDetail: (amount: string, age: number) => string;
+  pensionCreditDetail: (totalAmount: string, count: number) => string;
   debtCostDetail: string;
   fireNumberHint: string;
   bridgeStrategyActive: string;

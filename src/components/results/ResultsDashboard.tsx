@@ -48,7 +48,10 @@ export function ResultsDashboard() {
               <span className="text-emerald-600 dark:text-emerald-400 truncate">
                 {t.explainerPensionCredit}
                 <span className="text-[10px] text-muted-foreground ml-1 font-sans">
-                  ({t.pensionCreditDetail(formatCurrency(inputs.income.pensionMonthlyAmount), inputs.income.pensionStartAge)})
+                  ({t.pensionCreditDetail(
+                    formatCurrency(inputs.income.pensions.reduce((s, p) => s + p.monthlyAmount, 0)),
+                    inputs.income.pensions.length,
+                  )})
                 </span>
               </span>
               <span className="text-emerald-600 dark:text-emerald-400 font-medium tabular-nums whitespace-nowrap">

@@ -5,12 +5,18 @@ export interface PersonalInfo {
 }
 
 // ─── Income ───
+export interface Pension {
+  id: string;
+  name: string;
+  monthlyAmount: number;
+  startAge: number;
+}
+
 export interface IncomeInfo {
   monthlyNetSalary: number;
   annualSalaryGrowth: number; // percentage
   additionalMonthlyIncome: number;
-  pensionMonthlyAmount: number;
-  pensionStartAge: number;
+  pensions: Pension[];
 }
 
 // ─── Expenses ───

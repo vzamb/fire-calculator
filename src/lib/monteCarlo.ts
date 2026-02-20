@@ -1,4 +1,5 @@
 import type { FireInputs } from '@/types';
+import type { PensionEntry } from './financial';
 import { requiredPortfolio, survivesDrawdown } from './financial';
 
 export interface MonteCarloResult {
@@ -94,6 +95,11 @@ export function runMonteCarlo(
   const maxYears = personalInfo.lifeExpectancy - personalInfo.currentAge + 1;
   const startPortfolio = assets.investedAssets + assets.cashSavings + assets.otherAssets;
 
+  // Build pension entries once
+  const pensionEntries: PensionEntry[] = income.pensions
+    .filter(p => p.monthlyAmount > 0)
+    .map(p => ({ annualAmount: p.monthlyAmount * 12, startAge: p.startAge }));
+
   // Deterministic seed from inputs + targetFireAge — same params ⇒ same results
   const seedStr = JSON.stringify(inputs) + (targetFireAge ?? '');
   const seed = hashSeed(seedStr);
@@ -133,11 +139,13 @@ export function runMonteCarlo(
           return { ...d, yearsLeft: d.yearsLeft - 1 };
         });
 
-      // Pension
-      const pensionIncome =
-        age >= income.pensionStartAge
-          ? income.pensionMonthlyAmount * 12 * Math.pow(1 + inflation, i)
-          : 0;
+      // Pension — sum all active pensions at this age
+      let pensionIncome = 0;
+      for (const pen of pensionEntries) {
+        if (age >= pen.startAge) {
+          pensionIncome += pen.annualAmount * Math.pow(1 + inflation, i);
+        }
+      }
 
       // One-time events
       const oneTimeExpenses = fireGoals.futureExpenses
@@ -158,12 +166,10 @@ export function runMonteCarlo(
         // ── FIRE check (mirrors main calculator) ──
         const inflationMultiplier = Math.pow(1 + inflation, i);
         const retExpensesToday = baseAnnualExpenses * postRetirementFactor;
-        const pensionAnnualBase = income.pensionMonthlyAmount * 12;
-        const gapYears = Math.max(0, income.pensionStartAge - age);
 
-        // Required portfolio using gap+residual model
+        // Required portfolio using multi-pension model
         const reqToday = requiredPortfolio(
-          retExpensesToday, pensionAnnualBase, gapYears, swr, realReturn,
+          retExpensesToday, pensionEntries, age, swr, realReturn,
         );
 
         // Debt cost — PV of remaining fixed nominal payments
@@ -206,8 +212,7 @@ export function runMonteCarlo(
                 candidateRetExpenses,
                 inflation,
                 meanReturn,
-                income.pensionMonthlyAmount,
-                income.pensionStartAge,
+                pensionEntries,
                 age,
                 i,
                 personalInfo.lifeExpectancy,
