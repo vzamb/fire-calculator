@@ -1,6 +1,7 @@
 import type { FireInputs, FireResult, YearlyProjection } from '@/types';
 import type { PensionEntry, RecurringIncomeEntry } from './financial';
 import { requiredPortfolio, survivesDrawdown } from './financial';
+import { geometricReturn } from './constants';
 
 /** Build PensionEntry list from user input pensions */
 function toPensionEntries(inputs: FireInputs): PensionEntry[] {
@@ -10,7 +11,7 @@ function toPensionEntries(inputs: FireInputs): PensionEntry[] {
 }
 
 function toRecurringIncomeEntries(inputs: FireInputs): RecurringIncomeEntry[] {
-  return (inputs.fireGoals.recurringIncomes ?? [])
+  const fromGoals = (inputs.fireGoals.recurringIncomes ?? [])
     .filter((i) => i.monthlyAmount > 0)
     .map((i) => ({
       annualAmount: i.monthlyAmount * 12,
@@ -18,6 +19,18 @@ function toRecurringIncomeEntries(inputs: FireInputs): RecurringIncomeEntry[] {
       annualGrowthRate: i.annualGrowthRate / 100,
       includeInFire: i.includeInFire,
     }));
+
+  // Real estate assets → non-compounding recurring income
+  const fromRealEstate = (inputs.assets.realEstateAssets ?? [])
+    .filter((r) => r.monthlyNetIncome > 0)
+    .map((r) => ({
+      annualAmount: r.monthlyNetIncome * 12,
+      startAge: inputs.personalInfo.currentAge, // already generating income
+      annualGrowthRate: r.annualAppreciation / 100,
+      includeInFire: true, // rental income always counts toward FIRE
+    }));
+
+  return [...fromGoals, ...fromRealEstate];
 }
 
 export function calculateFire(inputs: FireInputs): FireResult {
@@ -36,8 +49,12 @@ export function calculateFire(inputs: FireInputs): FireResult {
   const grossReturn = investmentStrategy.expectedAnnualReturn / 100;
   const annualFees = investmentStrategy.annualFees / 100;
   const capitalGainsTax = investmentStrategy.capitalGainsTaxRate / 100;
-  // Net return = (gross - fees) × (1 − capital gains tax)
-  const netReturn = (grossReturn - annualFees) * (1 - capitalGainsTax);
+  // Arithmetic net return (before volatility drag)
+  const arithmeticNet = (grossReturn - annualFees) * (1 - capitalGainsTax);
+  // Apply volatility drag: geometric ≈ arithmetic − σ²/2
+  const volPct = investmentStrategy.annualVolatility;
+  const geoReturnPct = geometricReturn(arithmeticNet * 100, volPct);
+  const netReturn = geoReturnPct / 100;
   const inflation = expenses.annualInflationRate / 100;
   const realReturn = Math.max(0.001, (1 + netReturn) / (1 + inflation) - 1);
 

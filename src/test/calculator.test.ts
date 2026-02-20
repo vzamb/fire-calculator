@@ -49,6 +49,7 @@ function makeInputs(overrides: Partial<{
       otherAssets: overrides.otherAssets ?? 0,
       debts: [],
       emergencyFundMonths: 6,
+      realEstateAssets: [],
     },
     investmentStrategy: {
       riskProfile: 'moderate',
@@ -56,7 +57,8 @@ function makeInputs(overrides: Partial<{
       annualVolatility: 12,
       annualFees: overrides.annualFees ?? 0,
       capitalGainsTaxRate: overrides.capitalGainsTax ?? 0,
-      stockAllocation: 80,
+      portfolioAllocation: { equity: 60, bonds: 30, cash: 10 },
+      assetReturns: { equity: 8, bonds: 2.5, cash: 1.5 },
     },
     fireGoals: {
       safeWithdrawalRate: overrides.swr ?? 4,

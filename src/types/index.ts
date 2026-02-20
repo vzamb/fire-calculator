@@ -43,6 +43,7 @@ export interface AssetsInfo {
   otherAssets: number;
   debts: Debt[];
   emergencyFundMonths: number;
+  realEstateAssets: RealEstateAsset[];
 }
 
 export interface Debt {
@@ -54,16 +55,33 @@ export interface Debt {
   remainingYears: number;
 }
 
+export interface RealEstateAsset {
+  id: string;
+  name: string;
+  propertyValue: number;       // total value of property (display only, not compounding)
+  monthlyNetIncome: number;    // net rental income after costs/taxes
+  annualAppreciation: number;  // % yearly property value growth (not portfolio return)
+}
+
 // ─── Investment Strategy ───
 export type RiskProfile = 'conservative' | 'moderate' | 'aggressive' | 'custom';
 
+export type AssetClassKey = 'equity' | 'bonds' | 'cash';
+
+/** Percentage allocation per asset class (must sum to 100) */
+export type PortfolioAllocation = Record<AssetClassKey, number>;
+
+/** User-configurable expected return per asset class */
+export type AssetReturns = Record<AssetClassKey, number>;
+
 export interface InvestmentStrategy {
   riskProfile: RiskProfile;
-  expectedAnnualReturn: number; // percentage
-  annualVolatility: number; // percentage
+  expectedAnnualReturn: number; // percentage — auto-computed from allocation
+  annualVolatility: number; // percentage — auto-computed from allocation
   annualFees: number; // percentage (TER)
   capitalGainsTaxRate: number; // percentage
-  stockAllocation: number; // percentage (rest is bonds)
+  portfolioAllocation: PortfolioAllocation;
+  assetReturns: AssetReturns; // user-configurable returns per asset class
 }
 
 // ─── FIRE Goals ───

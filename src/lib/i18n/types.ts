@@ -89,8 +89,28 @@ export interface Translations {
   volatilityMedium: string;
   volatilityHigh: string;
   volatilityVeryHigh: string;
+  portfolioAllocation: string;
+  equity: string;
+  bonds: string;
+  cash: string;
+  allocationTotal: string;
+  allocationWarning: string;
+  lockSlider: string;
+  unlockSlider: string;
+  afterVolDrag: string;
+  assetReturn: string;
+  annualFees: string;
+  annualFeesTooltip: string;
   capitalGainsTax: string;
   capitalGainsTaxTooltip: string;
+  realEstateAssets: string;
+  realEstateHint: string;
+  noRealEstate: string;
+  realEstatePlaceholder: (i: number) => string;
+  propertyValue: string;
+  monthlyRentalIncome: string;
+  annualAppreciation: string;
+  rentalYield: string;
 
   // ─── Life Events ───
   lifeEvents: string;
@@ -230,9 +250,9 @@ export interface Translations {
   milestoneTimeline: string;
   milestoneTimelineDesc: string;
   milestoneEmergencyFund: string;
-  milestone100k: string;
   milestoneCoastFire: string;
   milestoneHalfFire: string;
+  milestoneLeanFire: string;
   milestoneFire: string;
   milestoneReached: string;
   milestoneYearsAway: (y: number) => string;

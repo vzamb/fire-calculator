@@ -18,10 +18,9 @@ import { Dice5, Loader2 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
 export function MonteCarloChart() {
-  const { inputs, result, updateInvestmentStrategy } = useFireStore();
+  const { inputs, result } = useFireStore();
   const t = useT();
-  const volatility = inputs.investmentStrategy.annualVolatility;
-  const volatilityLabel = volatility.toFixed(1);
+  const volatilityLabel = inputs.investmentStrategy.annualVolatility.toFixed(1);
 
   // Target FIRE age slider — null means "use computed FIRE age"
   const [targetAge, setTargetAge] = useState<number | null>(null);
@@ -65,33 +64,6 @@ export function MonteCarloChart() {
         </p>
       </CardHeader>
       <CardContent>
-        {/* Portfolio volatility presets */}
-        <div className="mb-4">
-          <p className="text-xs font-medium text-foreground mb-2">{t.annualVolatility}</p>
-          <div className="grid grid-cols-4 gap-1.5">
-            {([
-              { label: t.volatilityLow,      value: 7  },
-              { label: t.volatilityMedium,   value: 12 },
-              { label: t.volatilityHigh,     value: 18 },
-              { label: t.volatilityVeryHigh, value: 25 },
-            ] as const).map((preset) => (
-              <button
-                key={preset.value}
-                onClick={() => updateInvestmentStrategy({ annualVolatility: preset.value, riskProfile: 'custom' })}
-                className={cn(
-                  'flex flex-col items-center py-1.5 px-1 rounded-lg border text-center transition-all',
-                  volatility === preset.value
-                    ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                    : 'border-border hover:border-primary/30',
-                )}
-              >
-                <span className="text-[11px] font-semibold leading-tight">{preset.label}</span>
-                <span className="text-[10px] text-muted-foreground">{preset.value}%</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Target FIRE age slider */}
         <div className="mb-4 px-1">
           <div className="flex items-center justify-between mb-1.5">

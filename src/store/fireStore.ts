@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { FireInputs, FireResult, Theme } from '@/types';
 import type { Locale } from '@/lib/i18n';
-import { DEFAULT_INPUTS } from '@/lib/constants';
+import { DEFAULT_INPUTS, DEFAULT_ASSET_RETURNS, computePortfolioStats } from '@/lib/constants';
 import { calculateFire } from '@/lib/calculator';
 import { setActiveCurrency, setActiveLocale } from '@/lib/formatters';
 
@@ -183,8 +183,54 @@ export const useFireStore = create<FireStore>()(
               state.inputs.investmentStrategy.annualVolatility = DEFAULT_INPUTS.investmentStrategy.annualVolatility;
             }
 
+            // Migrate legacy stockAllocation to portfolioAllocation
+            const strategy = state.inputs.investmentStrategy as unknown as Record<string, unknown>;
+
+            // Migrate old 5-class allocation → new 3-class (equity, bonds, cash)
+            const oldAlloc = strategy.portfolioAllocation as Record<string, number> | undefined;
+            if (oldAlloc && ('globalEquity' in oldAlloc || 'euBonds' in oldAlloc || 'govBonds' in oldAlloc || 'reits' in oldAlloc)) {
+              const equity = (oldAlloc.globalEquity ?? 0) + (oldAlloc.reits ?? 0);
+              const bonds = (oldAlloc.euBonds ?? 0) + (oldAlloc.govBonds ?? 0);
+              const cash = oldAlloc.cash ?? 0;
+              const total = equity + bonds + cash;
+              const alloc = {
+                equity: total > 0 ? Math.round(equity / total * 100) : 60,
+                bonds: total > 0 ? Math.round(bonds / total * 100) : 30,
+                cash: 0,
+              };
+              alloc.cash = 100 - alloc.equity - alloc.bonds;
+              state.inputs.investmentStrategy.portfolioAllocation = alloc;
+            } else if (!oldAlloc || typeof oldAlloc !== 'object') {
+              const stocks = (strategy.stockAllocation as number) ?? 70;
+              const bonds = Math.max(0, 100 - stocks);
+              const alloc = {
+                equity: Math.round(stocks),
+                bonds: Math.round(bonds * 0.8),
+                cash: Math.max(0, 100 - Math.round(stocks) - Math.round(bonds * 0.8)),
+              };
+              state.inputs.investmentStrategy.portfolioAllocation = alloc;
+            }
+            delete (strategy as Record<string, unknown>).stockAllocation;
+
+            // Ensure assetReturns exists
+            if (!strategy.assetReturns || typeof strategy.assetReturns !== 'object') {
+              state.inputs.investmentStrategy.assetReturns = { ...DEFAULT_ASSET_RETURNS };
+            }
+
+            // Recompute stats from the (migrated) allocation
+            const finalAlloc = state.inputs.investmentStrategy.portfolioAllocation;
+            const finalReturns = state.inputs.investmentStrategy.assetReturns;
+            const stats = computePortfolioStats(finalAlloc, finalReturns);
+            state.inputs.investmentStrategy.expectedAnnualReturn = stats.arithmeticReturn;
+            state.inputs.investmentStrategy.annualVolatility = stats.volatility;
+
             if (!Array.isArray(state.inputs.fireGoals.recurringIncomes)) {
               state.inputs.fireGoals.recurringIncomes = DEFAULT_INPUTS.fireGoals.recurringIncomes;
+            }
+
+            // Ensure realEstateAssets array exists
+            if (!Array.isArray(state.inputs.assets.realEstateAssets)) {
+              state.inputs.assets.realEstateAssets = [];
             }
 
             // Recalculate after rehydration from localStorage

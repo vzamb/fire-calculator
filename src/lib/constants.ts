@@ -1,4 +1,4 @@
-import type { FireInputs, PersonalInfo, IncomeInfo, ExpensesInfo, AssetsInfo, InvestmentStrategy, FireGoals } from '@/types';
+import type { FireInputs, PersonalInfo, IncomeInfo, ExpensesInfo, AssetsInfo, InvestmentStrategy, FireGoals, AssetClassKey, PortfolioAllocation, AssetReturns } from '@/types';
 
 export const DEFAULT_PERSONAL_INFO: PersonalInfo = {
   currentAge: 30,
@@ -34,15 +34,92 @@ export const DEFAULT_ASSETS: AssetsInfo = {
   otherAssets: 0,
   debts: [],
   emergencyFundMonths: 6,
+  realEstateAssets: [],
 };
+
+// ─── Asset Class Data ───
+// Historical annualised return & volatility (nominal, pre-fee, long-run estimates)
+export interface AssetClassInfo {
+  labelKey: AssetClassKey;
+  defaultReturn: number;  // default arithmetic mean annual return (%)
+  volatility: number;     // annual standard deviation (%)
+  emoji: string;
+}
+
+export const ASSET_CLASSES: Record<AssetClassKey, AssetClassInfo> = {
+  equity: { labelKey: 'equity', defaultReturn: 8.0,  volatility: 16.0, emoji: '📈' },
+  bonds:  { labelKey: 'bonds',  defaultReturn: 2.5,  volatility: 4.5,  emoji: '🏦' },
+  cash:   { labelKey: 'cash',   defaultReturn: 1.5,  volatility: 1.0,  emoji: '💵' },
+};
+
+export const DEFAULT_ASSET_RETURNS: AssetReturns = {
+  equity: 8.0,
+  bonds: 2.5,
+  cash: 1.5,
+};
+
+// Simplified correlation matrix (symmetric, col/row order: equity, bonds, cash)
+const ASSET_KEYS: AssetClassKey[] = ['equity', 'bonds', 'cash'];
+const CORR_MATRIX: number[][] = [
+  // eq    bonds  cash
+  [ 1.00,  0.10,  0.00 ], // equity
+  [ 0.10,  1.00,  0.30 ], // bonds
+  [ 0.00,  0.30,  1.00 ], // cash
+];
+
+/**
+ * Compute portfolio arithmetic mean return and volatility from allocation.
+ * Accepts optional custom returns per asset class (overrides defaults).
+ * Uses the full variance-covariance approach:
+ *   σ_p² = Σ_i Σ_j w_i w_j σ_i σ_j ρ_ij
+ */
+export function computePortfolioStats(
+  alloc: PortfolioAllocation,
+  customReturns?: AssetReturns,
+): { arithmeticReturn: number; volatility: number } {
+  let weightedReturn = 0;
+  let variance = 0;
+
+  const weights = ASSET_KEYS.map(k => (alloc[k] ?? 0) / 100);
+  const vols = ASSET_KEYS.map(k => ASSET_CLASSES[k].volatility / 100);
+  const rets = ASSET_KEYS.map(k => customReturns?.[k] ?? ASSET_CLASSES[k].defaultReturn);
+
+  for (let i = 0; i < ASSET_KEYS.length; i++) {
+    weightedReturn += weights[i]! * rets[i]!;
+    for (let j = 0; j < ASSET_KEYS.length; j++) {
+      variance += weights[i]! * weights[j]! * vols[i]! * vols[j]! * (CORR_MATRIX[i]?.[j] ?? 0);
+    }
+  }
+
+  return {
+    arithmeticReturn: Math.round(weightedReturn * 10) / 10,    // e.g. 6.8
+    volatility: Math.round(Math.sqrt(variance) * 1000) / 10,   // e.g. 11.2
+  };
+}
+
+/** Apply volatility drag: geometric return ≈ arithmetic - σ²/2 */
+export function geometricReturn(arithmeticReturn: number, volatility: number): number {
+  const r = arithmeticReturn / 100;
+  const v = volatility / 100;
+  return Math.max(0, (r - (v * v) / 2)) * 100;
+}
+
+const DEFAULT_ALLOCATION: PortfolioAllocation = {
+  equity: 60,
+  bonds: 30,
+  cash: 10,
+};
+
+const defaultStats = computePortfolioStats(DEFAULT_ALLOCATION, DEFAULT_ASSET_RETURNS);
 
 export const DEFAULT_INVESTMENT_STRATEGY: InvestmentStrategy = {
   riskProfile: 'moderate',
-  expectedAnnualReturn: 7,
-  annualVolatility: 12,
+  expectedAnnualReturn: defaultStats.arithmeticReturn,
+  annualVolatility: defaultStats.volatility,
   annualFees: 0.3,
   capitalGainsTaxRate: 26,
-  stockAllocation: 80,
+  portfolioAllocation: DEFAULT_ALLOCATION,
+  assetReturns: { ...DEFAULT_ASSET_RETURNS },
 };
 
 export const DEFAULT_FIRE_GOALS: FireGoals = {
@@ -63,11 +140,35 @@ export const DEFAULT_INPUTS: FireInputs = {
   fireGoals: DEFAULT_FIRE_GOALS,
 };
 
-export const RISK_PROFILES: Record<string, { label: string; return: number; volatility: number; stocks: number; description: string }> = {
-  conservative: { label: 'Conservative', return: 5, volatility: 7, stocks: 40, description: 'Lower risk, stable growth — mostly bonds & cash' },
-  moderate: { label: 'Moderate', return: 7, volatility: 12, stocks: 70, description: 'Balanced risk/reward — diversified mix' },
-  aggressive: { label: 'Aggressive', return: 9, volatility: 18, stocks: 90, description: 'Higher risk, higher potential — equity-heavy' },
-  custom: { label: 'Custom', return: 7, volatility: 12, stocks: 70, description: 'Set your own parameters' },
+export const RISK_PROFILES: Record<string, { label: string; emoji: string; allocation: PortfolioAllocation; returns: AssetReturns; description: string }> = {
+  conservative: {
+    label: 'Conservative',
+    emoji: '🛡️',
+    allocation: { equity: 25, bonds: 55, cash: 20 },
+    returns: { ...DEFAULT_ASSET_RETURNS },
+    description: 'Capital preservation — low risk, steady growth',
+  },
+  moderate: {
+    label: 'Moderate',
+    emoji: '⚖️',
+    allocation: { equity: 60, bonds: 30, cash: 10 },
+    returns: { ...DEFAULT_ASSET_RETURNS },
+    description: 'Balanced growth — diversified risk/reward',
+  },
+  aggressive: {
+    label: 'Aggressive',
+    emoji: '🚀',
+    allocation: { equity: 85, bonds: 10, cash: 5 },
+    returns: { ...DEFAULT_ASSET_RETURNS },
+    description: 'Maximum growth — high volatility, high potential',
+  },
+  custom: {
+    label: 'Custom',
+    emoji: '⚙️',
+    allocation: { equity: 60, bonds: 30, cash: 10 },
+    returns: { ...DEFAULT_ASSET_RETURNS },
+    description: 'Your own allocation & returns',
+  },
 };
 
 export const FIRE_TYPES: Record<string, { label: string; multiplier: number; description: string; emoji: string }> = {

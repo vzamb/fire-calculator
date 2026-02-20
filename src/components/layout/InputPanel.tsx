@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, User, Wallet, Receipt, Landmark, TrendingUp, Target, PiggyBank, CalendarClock } from 'lucide-react';
+import { ChevronDown, User, Wallet, Receipt, Landmark, TrendingUp, Target, PiggyBank, CalendarClock, Lock, Unlock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFireStore } from '@/store/fireStore';
 import { Slider } from '@/components/ui/Slider';
@@ -8,8 +8,8 @@ import { CurrencyInput, PercentInput, NumberInput } from '@/components/shared/Fo
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Plus, Trash2 } from 'lucide-react';
-import { RISK_PROFILES, FIRE_TYPES } from '@/lib/constants';
-import type { RiskProfile, FireType, Debt, FutureExpense, FutureIncome, Pension, RecurringIncome } from '@/types';
+import { RISK_PROFILES, FIRE_TYPES, ASSET_CLASSES, computePortfolioStats, geometricReturn, DEFAULT_ASSET_RETURNS } from '@/lib/constants';
+import type { RiskProfile, FireType, AssetClassKey, AssetReturns, Debt, FutureExpense, FutureIncome, Pension, RecurringIncome, RealEstateAsset } from '@/types';
 import { formatCurrency } from '@/lib/formatters';
 import { useT, tKey } from '@/lib/i18n';
 import { ProfileManager } from './ProfileManager';
@@ -69,6 +69,182 @@ function Section({
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Portfolio allocation sliders with lock + editable returns ───
+import type { PortfolioAllocation } from '@/types';
+
+function PortfolioSliders({
+  alloc,
+  assetReturns,
+  onAllocChange,
+}: {
+  alloc: PortfolioAllocation;
+  assetReturns: AssetReturns;
+  onAllocChange: (a: PortfolioAllocation, r: AssetReturns) => void;
+}) {
+  const t = useT();
+  const [locked, setLocked] = useState<Partial<Record<AssetClassKey, boolean>>>({});
+
+  const toggleLock = useCallback((key: AssetClassKey) => {
+    setLocked((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  const handleChange = useCallback(
+    (key: AssetClassKey, newVal: number) => {
+      const oldVal = alloc[key] ?? 0;
+      if (newVal === oldVal) return;
+
+      const adjustableKeys = (Object.keys(ASSET_CLASSES) as AssetClassKey[]).filter(
+        (k) => k !== key && !locked[k]
+      );
+      const lockedOtherSum = (Object.keys(ASSET_CLASSES) as AssetClassKey[])
+        .filter((k) => k !== key && locked[k])
+        .reduce((s, k) => s + (alloc[k] ?? 0), 0);
+
+      const clampedVal = Math.min(newVal, 100 - lockedOtherSum);
+      const remainder = 100 - clampedVal - lockedOtherSum;
+      const newAlloc = { ...alloc, [key]: clampedVal };
+      const adjustableTotal = adjustableKeys.reduce((s, k) => s + (alloc[k] ?? 0), 0);
+
+      if (adjustableKeys.length === 0) return;
+
+      if (adjustableTotal > 0) {
+        let distributed = 0;
+        adjustableKeys.forEach((k, idx) => {
+          if (idx === adjustableKeys.length - 1) {
+            newAlloc[k] = Math.max(0, remainder - distributed);
+          } else {
+            const share = (alloc[k] ?? 0) / adjustableTotal;
+            const adjusted = Math.max(0, Math.round((share * remainder) / 5) * 5);
+            newAlloc[k] = adjusted;
+            distributed += adjusted;
+          }
+        });
+      } else {
+        const each = Math.floor(remainder / adjustableKeys.length / 5) * 5;
+        let distributed = 0;
+        adjustableKeys.forEach((k, idx) => {
+          if (idx === adjustableKeys.length - 1) {
+            newAlloc[k] = Math.max(0, remainder - distributed);
+          } else {
+            newAlloc[k] = each;
+            distributed += each;
+          }
+        });
+      }
+
+      onAllocChange(newAlloc, assetReturns);
+    },
+    [alloc, assetReturns, locked, onAllocChange]
+  );
+
+  const handleReturnChange = useCallback(
+    (key: AssetClassKey, val: number) => {
+      const newReturns = { ...assetReturns, [key]: val };
+      onAllocChange(alloc, newReturns);
+    },
+    [alloc, assetReturns, onAllocChange]
+  );
+
+  // Colors per asset class
+  const barColors: Record<AssetClassKey, string> = {
+    equity: 'bg-violet-500',
+    bonds: 'bg-blue-400',
+    cash: 'bg-emerald-400',
+  };
+
+  return (
+    <div className="space-y-3 mt-1">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-foreground">{t.portfolioAllocation}</p>
+      </div>
+
+      {/* Stacked bar visualization */}
+      <div className="flex h-2.5 rounded-full overflow-hidden bg-secondary">
+        {(Object.keys(ASSET_CLASSES) as AssetClassKey[]).map((key) => {
+          const pct = alloc[key] ?? 0;
+          if (pct === 0) return null;
+          return (
+            <div
+              key={key}
+              className={cn('transition-all duration-200', barColors[key])}
+              style={{ width: `${pct}%` }}
+            />
+          );
+        })}
+      </div>
+
+      {/* Asset class rows */}
+      {(Object.keys(ASSET_CLASSES) as AssetClassKey[]).map((key) => {
+        const cls = ASSET_CLASSES[key];
+        const isLocked = !!locked[key];
+        const pct = alloc[key] ?? 0;
+        return (
+          <div key={key} className="rounded-lg border border-border p-2.5 space-y-2">
+            {/* Header: emoji + name + lock + percentage badge */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-base leading-none">{cls.emoji}</span>
+                <span className="text-xs font-semibold text-foreground">{tKey(t, key)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  'text-xs font-bold tabular-nums px-1.5 py-0.5 rounded',
+                  barColors[key], 'text-white'
+                )}>{pct}%</span>
+                <button
+                  type="button"
+                  onClick={() => toggleLock(key)}
+                  title={isLocked ? t.unlockSlider : t.lockSlider}
+                  className={cn(
+                    'p-1 rounded-md transition-colors',
+                    isLocked
+                      ? 'bg-primary/10 text-primary hover:bg-primary/20'
+                      : 'text-muted-foreground/30 hover:text-muted-foreground hover:bg-secondary'
+                  )}
+                >
+                  {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Slider */}
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={pct}
+              disabled={isLocked}
+              onChange={(e) => handleChange(key, Number(e.target.value))}
+              className={cn(
+                'w-full h-1.5 bg-secondary rounded-full appearance-none cursor-pointer accent-primary',
+                isLocked && 'opacity-40 cursor-not-allowed'
+              )}
+            />
+
+            {/* Expected return input */}
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-muted-foreground">{t.assetReturn}</span>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min={0}
+                  max={30}
+                  step={0.5}
+                  value={assetReturns[key] ?? cls.defaultReturn}
+                  onChange={(e) => handleReturnChange(key, Number(e.target.value))}
+                  className="w-14 h-6 text-xs text-center bg-secondary border border-border rounded-md tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <span className="text-[10px] text-muted-foreground">%</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -284,53 +460,98 @@ export function InputPanel() {
         iconColor="text-violet-500"
         iconBg="bg-violet-500/10"
         title={t.investmentStrategy}
-        summary={`~${investmentStrategy.expectedAnnualReturn}%`}
+        summary={`${investmentStrategy.expectedAnnualReturn}% · σ ${investmentStrategy.annualVolatility}%`}
       >
-        <div className="grid grid-cols-4 gap-2">
-          {Object.entries(RISK_PROFILES).map(([key, profile]) => (
-            <button
-              key={key}
-              onClick={() => {
-                if (key === 'custom') {
-                  updateInvestmentStrategy({ riskProfile: key as RiskProfile });
-                } else {
-                  updateInvestmentStrategy({
-                    riskProfile: key as RiskProfile,
-                    expectedAnnualReturn: profile.return,
-                    annualVolatility: profile.volatility,
-                    stockAllocation: profile.stocks,
-                  });
-                }
-              }}
-              className={cn(
-                'flex flex-col items-center p-2.5 rounded-lg border text-center transition-all',
-                investmentStrategy.riskProfile === key
-                  ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                  : 'border-border hover:border-primary/30'
-              )}
-            >
-              <span className="text-[11px] font-semibold leading-tight truncate w-full">{tKey(t, key)}</span>
-              <span className="text-[10px] text-muted-foreground">~{profile.return}%</span>
-            </button>
-          ))}
+        {/* Risk profile presets */}
+        <div className="grid grid-cols-2 gap-2">
+          {Object.entries(RISK_PROFILES).map(([key, profile]) => {
+            const stats = computePortfolioStats(profile.allocation, profile.returns);
+            const isActive = investmentStrategy.riskProfile === key;
+            return (
+              <button
+                key={key}
+                onClick={() => {
+                  if (key === 'custom') {
+                    updateInvestmentStrategy({ riskProfile: key as RiskProfile });
+                  } else {
+                    updateInvestmentStrategy({
+                      riskProfile: key as RiskProfile,
+                      portfolioAllocation: { ...profile.allocation },
+                      assetReturns: { ...profile.returns },
+                      expectedAnnualReturn: stats.arithmeticReturn,
+                      annualVolatility: stats.volatility,
+                    });
+                  }
+                }}
+                className={cn(
+                  'flex items-center gap-2.5 p-2.5 rounded-lg border text-left transition-all',
+                  isActive
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                    : 'border-border hover:border-primary/30'
+                )}
+              >
+                <span className="text-xl leading-none shrink-0">{profile.emoji}</span>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold leading-tight">{tKey(t, key)}</p>
+                  <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">~{stats.arithmeticReturn}% · σ {stats.volatility}%</p>
+                </div>
+              </button>
+            );
+          })}
         </div>
-        <Slider
-          label={t.expectedAnnualReturn}
-          min={1}
-          max={15}
-          step={0.5}
-          value={investmentStrategy.expectedAnnualReturn}
-          onChange={(v) => updateInvestmentStrategy({ expectedAnnualReturn: v, riskProfile: 'custom' })}
-          suffix="%"
+
+        {/* Portfolio allocation sliders */}
+        <PortfolioSliders
+          alloc={investmentStrategy.portfolioAllocation ?? { equity: 60, bonds: 30, cash: 10 }}
+          assetReturns={investmentStrategy.assetReturns ?? DEFAULT_ASSET_RETURNS}
+          onAllocChange={(newAlloc, newReturns) => {
+            const stats = computePortfolioStats(newAlloc, newReturns);
+            updateInvestmentStrategy({
+              riskProfile: 'custom',
+              portfolioAllocation: newAlloc,
+              assetReturns: newReturns,
+              expectedAnnualReturn: stats.arithmeticReturn,
+              annualVolatility: stats.volatility,
+            });
+          }}
         />
-        <PercentInput
-          label={t.capitalGainsTax}
-          tooltip={t.capitalGainsTaxTooltip}
-          value={investmentStrategy.capitalGainsTaxRate}
-          onChange={(v) => updateInvestmentStrategy({ capitalGainsTaxRate: v })}
-          step={1}
-          max={50}
-        />
+
+        {/* Computed stats display */}
+        <div className="grid grid-cols-2 gap-3 p-3 bg-secondary/30 rounded-lg text-center">
+          <div>
+            <p className="text-[10px] text-muted-foreground">{t.expectedAnnualReturn}</p>
+            <p className="text-sm font-bold text-foreground">{investmentStrategy.expectedAnnualReturn}%</p>
+            <p className="text-[9px] text-muted-foreground">
+              {t.afterVolDrag}: {geometricReturn(
+                (investmentStrategy.expectedAnnualReturn / 100 - investmentStrategy.annualFees / 100) * (1 - investmentStrategy.capitalGainsTaxRate / 100) * 100,
+                investmentStrategy.annualVolatility,
+              ).toFixed(1)}%
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground">{t.annualVolatility}</p>
+            <p className="text-sm font-bold text-foreground">{investmentStrategy.annualVolatility}%</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <PercentInput
+            label={t.annualFees}
+            tooltip={t.annualFeesTooltip}
+            value={investmentStrategy.annualFees}
+            onChange={(v) => updateInvestmentStrategy({ annualFees: v })}
+            step={0.05}
+            max={3}
+          />
+          <PercentInput
+            label={t.capitalGainsTax}
+            tooltip={t.capitalGainsTaxTooltip}
+            value={investmentStrategy.capitalGainsTaxRate}
+            onChange={(v) => updateInvestmentStrategy({ capitalGainsTaxRate: v })}
+            step={1}
+            max={50}
+          />
+        </div>
       </Section>
 
       {/* ─── Life Events ─── */}
@@ -447,7 +668,8 @@ function AssetsSection() {
     updateAssets({ debts: assets.debts.filter((d) => d.id !== id) });
   };
 
-  const totalAssets = assets.investedAssets + assets.cashSavings + assets.otherAssets;
+  const totalAssets = assets.investedAssets + assets.cashSavings + assets.otherAssets
+    + (assets.realEstateAssets ?? []).reduce((s, r) => s + r.propertyValue, 0);
   const totalDebt = assets.debts.reduce((s, d) => s + d.monthlyPayment * d.remainingYears * 12, 0);
 
   return (
@@ -534,6 +756,98 @@ function AssetsSection() {
                 {' · '}{t.endsIn} <span className="font-medium text-emerald-500">
                   {new Date().getFullYear() + debt.remainingYears}
                 </span>
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Real Estate */}
+      <div className="pt-3 border-t border-border">
+        <div className="flex items-center justify-between mb-1">
+          <h4 className="text-xs font-medium text-muted-foreground">🏠 {t.realEstateAssets}</h4>
+          <Button variant="outline" size="sm" onClick={() => {
+            const prop: RealEstateAsset = {
+              id: crypto.randomUUID(),
+              name: '',
+              propertyValue: 0,
+              monthlyNetIncome: 0,
+              annualAppreciation: 2,
+            };
+            updateAssets({ realEstateAssets: [...(assets.realEstateAssets ?? []), prop] });
+          }} className="h-7 text-xs">
+            <Plus className="w-3 h-3 mr-1" /> {t.add}
+          </Button>
+        </div>
+        <p className="text-[10px] text-muted-foreground mb-3">{t.realEstateHint}</p>
+
+        {(assets.realEstateAssets ?? []).length === 0 && (
+          <p className="text-xs text-muted-foreground/60 text-center py-2">{t.noRealEstate}</p>
+        )}
+
+        {(assets.realEstateAssets ?? []).map((prop, i) => (
+          <div key={prop.id} className="border border-border rounded-lg p-3 mb-2 space-y-3 animate-slide-up">
+            <div className="flex items-center justify-between">
+              <Input
+                type="text"
+                value={prop.name}
+                onChange={(e) => updateAssets({
+                  realEstateAssets: (assets.realEstateAssets ?? []).map(p =>
+                    p.id === prop.id ? { ...p, name: e.target.value } : p
+                  ),
+                })}
+                placeholder={t.realEstatePlaceholder(i + 1)}
+                className="border-0 bg-transparent p-0 h-auto text-sm font-medium focus-visible:ring-0"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => updateAssets({
+                  realEstateAssets: (assets.realEstateAssets ?? []).filter(p => p.id !== prop.id),
+                })}
+                className="text-destructive hover:text-destructive h-7 w-7"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <CurrencyInput
+                label={t.propertyValue}
+                value={prop.propertyValue}
+                onChange={(v) => updateAssets({
+                  realEstateAssets: (assets.realEstateAssets ?? []).map(p =>
+                    p.id === prop.id ? { ...p, propertyValue: v } : p
+                  ),
+                })}
+              />
+              <CurrencyInput
+                label={t.monthlyRentalIncome}
+                value={prop.monthlyNetIncome}
+                onChange={(v) => updateAssets({
+                  realEstateAssets: (assets.realEstateAssets ?? []).map(p =>
+                    p.id === prop.id ? { ...p, monthlyNetIncome: v } : p
+                  ),
+                })}
+              />
+            </div>
+            <PercentInput
+              label={t.annualAppreciation}
+              value={prop.annualAppreciation}
+              onChange={(v) => updateAssets({
+                realEstateAssets: (assets.realEstateAssets ?? []).map(p =>
+                  p.id === prop.id ? { ...p, annualAppreciation: v } : p
+                ),
+              })}
+              step={0.5}
+              min={-5}
+              max={15}
+            />
+            {prop.propertyValue > 0 && prop.monthlyNetIncome > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {t.rentalYield}: <span className="font-medium text-emerald-500">
+                  {((prop.monthlyNetIncome * 12 / prop.propertyValue) * 100).toFixed(1)}%
+                </span>
+                {' · '}{formatCurrency(prop.monthlyNetIncome * 12)}/{t.yearsShort}
               </p>
             )}
           </div>

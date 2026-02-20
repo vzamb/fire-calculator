@@ -1,6 +1,7 @@
 import type { FireInputs } from '@/types';
 import type { PensionEntry, RecurringIncomeEntry } from './financial';
 import { requiredPortfolio, survivesDrawdown } from './financial';
+import { geometricReturn } from './constants';
 
 export interface MonteCarloResult {
   /** Percentile curves: age → portfolio value */
@@ -81,12 +82,15 @@ export function runMonteCarlo(
   const grossReturn = investmentStrategy.expectedAnnualReturn / 100;
   const annualFees = investmentStrategy.annualFees / 100;
   const capitalGainsTax = investmentStrategy.capitalGainsTaxRate / 100;
-  const meanReturn = (grossReturn - annualFees) * (1 - capitalGainsTax);
+  // Arithmetic mean net return (used for random draws)
+  const arithmeticNet = (grossReturn - annualFees) * (1 - capitalGainsTax);
   const volatility = (investmentStrategy.annualVolatility ?? 12) / 100;
+  // Geometric net return (for deterministic FIRE checks inside sim)
+  const geoNet = geometricReturn(arithmeticNet * 100, investmentStrategy.annualVolatility ?? 12) / 100;
 
   const inflation = expenses.annualInflationRate / 100;
   const swr = fireGoals.safeWithdrawalRate / 100;
-  const realReturn = Math.max(0.001, (1 + meanReturn) / (1 + inflation) - 1);
+  const realReturn = Math.max(0.001, (1 + geoNet) / (1 + inflation) - 1);
   const postRetirementFactor = expenses.postRetirementExpensePercent / 100;
   const baseAnnualExpenses = expenses.monthlyExpenses * 12;
   const monthlyInvestment = fireGoals.monthlyInvestment;
@@ -99,14 +103,25 @@ export function runMonteCarlo(
     .filter(p => p.monthlyAmount > 0)
     .map(p => ({ annualAmount: p.monthlyAmount * 12, startAge: p.startAge }));
 
-  const recurringIncomeEntries: RecurringIncomeEntry[] = (fireGoals.recurringIncomes ?? [])
-    .filter((i) => i.monthlyAmount > 0)
-    .map((i) => ({
-      annualAmount: i.monthlyAmount * 12,
-      startAge: i.startAge,
-      annualGrowthRate: i.annualGrowthRate / 100,
-      includeInFire: i.includeInFire,
-    }));
+  const recurringIncomeEntries: RecurringIncomeEntry[] = [
+    ...(fireGoals.recurringIncomes ?? [])
+      .filter((i) => i.monthlyAmount > 0)
+      .map((i) => ({
+        annualAmount: i.monthlyAmount * 12,
+        startAge: i.startAge,
+        annualGrowthRate: i.annualGrowthRate / 100,
+        includeInFire: i.includeInFire,
+      })),
+    // Real estate → non-compounding recurring income
+    ...(assets.realEstateAssets ?? [])
+      .filter((r) => r.monthlyNetIncome > 0)
+      .map((r) => ({
+        annualAmount: r.monthlyNetIncome * 12,
+        startAge: personalInfo.currentAge,
+        annualGrowthRate: r.annualAppreciation / 100,
+        includeInFire: true,
+      })),
+  ];
 
   // Deterministic seed from inputs + targetFireAge — same params ⇒ same results
   const seedStr = JSON.stringify(inputs) + (targetFireAge ?? '');
@@ -136,7 +151,7 @@ export function runMonteCarlo(
       const age = personalInfo.currentAge + i;
 
       // Random return for this year
-      const randomReturn = meanReturn + volatility * randn();
+      const randomReturn = arithmeticNet + volatility * randn();
 
       // Debt payments
       let annualDebtPayments = 0;
@@ -199,8 +214,8 @@ export function runMonteCarlo(
         for (const d of remainingDebts) {
           if (d.yearsLeft > 0) {
             const ap = d.monthlyPayment * 12;
-            debtPV += meanReturn > 0.001
-              ? ap * (1 - Math.pow(1 + meanReturn, -d.yearsLeft)) / meanReturn
+            debtPV += geoNet > 0.001
+              ? ap * (1 - Math.pow(1 + geoNet, -d.yearsLeft)) / geoNet
               : ap * d.yearsLeft;
           }
         }
@@ -236,7 +251,7 @@ export function runMonteCarlo(
                 portfolio,
                 candidateRetExpenses,
                 inflation,
-                meanReturn,
+                geoNet,
                 pensionEntries,
                 age,
                 i,
