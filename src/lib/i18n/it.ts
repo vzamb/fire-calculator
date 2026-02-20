@@ -83,6 +83,12 @@ export const it: Translations = {
   custom: 'Custom',
   customDesc: 'Imposta i tuoi parametri',
   expectedAnnualReturn: 'Rendimento Annuo Atteso',
+  annualVolatility: 'Volatilità Annua',
+  annualVolatilityTooltip: 'Variabilità annua attesa dei rendimenti. Volatilità più alta = range più ampio nella simulazione Monte Carlo.',
+  volatilityLow: 'Bassa',
+  volatilityMedium: 'Media',
+  volatilityHigh: 'Alta',
+  volatilityVeryHigh: 'Molto Alta',
   capitalGainsTax: 'Imposta sulle Plusvalenze',
   capitalGainsTaxTooltip: 'Tassa sui guadagni da investimenti (26% in Italia). Applicata solo alle plusvalenze, non ai contributi.',
 
@@ -97,6 +103,13 @@ export const it: Translations = {
   expectedFutureIncome: 'Entrate Future Attese',
   noFutureIncome: 'Eredità, TFR, vendita immobili, ecc.',
   incomePlaceholder: (i) => `Entrata ${i} (es. Eredità, TFR)`,
+  recurringIncomeStreams: 'Entrate Ricorrenti',
+  noRecurringIncome: 'Nessuna entrata ricorrente (affitto, royalties, ecc.)',
+  recurringIncomePlaceholder: (i) => `Flusso ${i} (es. Affitto seconda casa)`,
+  recurringMonthlyIncome: 'Entrata Mensile',
+  recurringIncomeStartAge: 'Età Inizio',
+  recurringIncomeGrowth: 'Crescita Annua',
+  recurringIncludeInFireLabel: 'Conteggia questo flusso nel target FIRE',
   includeInFireLabel: 'Incluso nel target FIRE — pensione anticipata (più rischioso)',
   postFireBonusLabel: 'Solo bonus post-FIRE',
   bridgeStrategyLabel: 'Strategia bridge',
@@ -201,7 +214,7 @@ export const it: Translations = {
 
   // ─── Monte Carlo ───
   monteCarloTitle: 'Simulazione Monte Carlo',
-  monteCarloDesc: '500 simulazioni randomizzate con la volatilità storica del mercato. Mostra la gamma di risultati possibili per il tuo portafoglio.',
+  monteCarloDesc: (volatility) => `500 simulazioni randomizzate con volatilità annua del ${volatility}%. Mostra la gamma di risultati possibili per il tuo portafoglio.`,
   monteCarloSuccess: 'Tasso di sopravvivenza',
   monteCarloMedianAge: 'Età FIRE mediana',
   monteCarloSimulations: 'Simulazioni',
@@ -210,7 +223,7 @@ export const it: Translations = {
   monteCarloMedian: 'Mediana (50°)',
   monteCarloP75: '75° percentile',
   monteCarloP95: '95° percentile (migliore)',
-  monteCarloFootnote: 'Rendimenti log-normali con ~12% di volatilità annua. I rendimenti passati non garantiscono risultati futuri.',
+  monteCarloFootnote: (volatility) => `Rendimenti log-normali con ${volatility}% di volatilità annua. I rendimenti passati non garantiscono risultati futuri.`,
   monteCarloTargetAge: 'Età di pensionamento obiettivo',
 
   // ─── Milestone Timeline ───

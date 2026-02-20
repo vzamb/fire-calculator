@@ -1,5 +1,5 @@
 import type { FireInputs } from '@/types';
-import type { PensionEntry } from './financial';
+import type { PensionEntry, RecurringIncomeEntry } from './financial';
 import { requiredPortfolio, survivesDrawdown } from './financial';
 
 export interface MonteCarloResult {
@@ -82,8 +82,7 @@ export function runMonteCarlo(
   const annualFees = investmentStrategy.annualFees / 100;
   const capitalGainsTax = investmentStrategy.capitalGainsTaxRate / 100;
   const meanReturn = (grossReturn - annualFees) * (1 - capitalGainsTax);
-  // Diversified portfolio volatility (~12%); pure equity would be ~16%
-  const volatility = 0.12;
+  const volatility = (investmentStrategy.annualVolatility ?? 12) / 100;
 
   const inflation = expenses.annualInflationRate / 100;
   const swr = fireGoals.safeWithdrawalRate / 100;
@@ -99,6 +98,15 @@ export function runMonteCarlo(
   const pensionEntries: PensionEntry[] = income.pensions
     .filter(p => p.monthlyAmount > 0)
     .map(p => ({ annualAmount: p.monthlyAmount * 12, startAge: p.startAge }));
+
+  const recurringIncomeEntries: RecurringIncomeEntry[] = (fireGoals.recurringIncomes ?? [])
+    .filter((i) => i.monthlyAmount > 0)
+    .map((i) => ({
+      annualAmount: i.monthlyAmount * 12,
+      startAge: i.startAge,
+      annualGrowthRate: i.annualGrowthRate / 100,
+      includeInFire: i.includeInFire,
+    }));
 
   // Deterministic seed from inputs + targetFireAge — same params ⇒ same results
   const seedStr = JSON.stringify(inputs) + (targetFireAge ?? '');
@@ -147,6 +155,13 @@ export function runMonteCarlo(
         }
       }
 
+      let recurringIncome = 0;
+      for (const inc of recurringIncomeEntries) {
+        if (age >= inc.startAge) {
+          recurringIncome += inc.annualAmount * Math.pow(1 + inc.annualGrowthRate, i);
+        }
+      }
+
       // One-time events
       const oneTimeExpenses = fireGoals.futureExpenses
         .filter((e) => e.yearsFromNow === i)
@@ -169,7 +184,14 @@ export function runMonteCarlo(
 
         // Required portfolio using multi-pension model
         const reqToday = requiredPortfolio(
-          retExpensesToday, pensionEntries, age, swr, realReturn,
+          retExpensesToday,
+          pensionEntries,
+          age,
+          swr,
+          realReturn,
+          personalInfo.lifeExpectancy,
+          inflation,
+          recurringIncomeEntries.filter((inc) => inc.startAge <= age || inc.includeInFire),
         );
 
         // Debt cost — PV of remaining fixed nominal payments
@@ -205,7 +227,10 @@ export function runMonteCarlo(
             const bridgeIncomes = fireGoals.futureIncomes
               .filter((e) => !!e.includeInFire && e.yearsFromNow > i);
 
-            if (bridgeIncomes.length > 0) {
+            const bridgeRecurring = recurringIncomeEntries
+              .filter((inc) => inc.includeInFire && inc.startAge > age);
+
+            if (bridgeIncomes.length > 0 || bridgeRecurring.length > 0) {
               const candidateRetExpenses = livingExpenses * postRetirementFactor;
               const survives = survivesDrawdown(
                 portfolio,
@@ -219,6 +244,7 @@ export function runMonteCarlo(
                 remainingDebts.filter((d) => d.yearsLeft > 0),
                 fireGoals.futureIncomes.filter((e) => e.yearsFromNow > i),
                 fireGoals.futureExpenses.filter((e) => e.yearsFromNow > i),
+                recurringIncomeEntries,
               );
               if (survives) {
                 fireAge = age;
@@ -231,7 +257,7 @@ export function runMonteCarlo(
       } else {
         // Drawdown
         const totalSpend = retirementExpenses + annualDebtPayments;
-        const withdrawal = Math.max(0, totalSpend - pensionIncome);
+        const withdrawal = Math.max(0, totalSpend - pensionIncome - recurringIncome);
         const growth = portfolio * randomReturn;
         portfolio += growth - withdrawal + netOneTime;
         portfolio = Math.max(0, portfolio);

@@ -83,6 +83,12 @@ export interface Translations {
   custom: string;
   customDesc: string;
   expectedAnnualReturn: string;
+  annualVolatility: string;
+  annualVolatilityTooltip: string;
+  volatilityLow: string;
+  volatilityMedium: string;
+  volatilityHigh: string;
+  volatilityVeryHigh: string;
   capitalGainsTax: string;
   capitalGainsTaxTooltip: string;
 
@@ -97,6 +103,13 @@ export interface Translations {
   expectedFutureIncome: string;
   noFutureIncome: string;
   incomePlaceholder: (i: number) => string;
+  recurringIncomeStreams: string;
+  noRecurringIncome: string;
+  recurringIncomePlaceholder: (i: number) => string;
+  recurringMonthlyIncome: string;
+  recurringIncomeStartAge: string;
+  recurringIncomeGrowth: string;
+  recurringIncludeInFireLabel: string;
   includeInFireLabel: string;
   postFireBonusLabel: string;
   bridgeStrategyLabel: string;
@@ -201,7 +214,7 @@ export interface Translations {
 
   // ─── Monte Carlo ───
   monteCarloTitle: string;
-  monteCarloDesc: string;
+  monteCarloDesc: (volatility: string) => string;
   monteCarloSuccess: string;
   monteCarloMedianAge: string;
   monteCarloSimulations: string;
@@ -210,7 +223,7 @@ export interface Translations {
   monteCarloMedian: string;
   monteCarloP75: string;
   monteCarloP95: string;
-  monteCarloFootnote: string;
+  monteCarloFootnote: (volatility: string) => string;
   monteCarloTargetAge: string;
 
   // ─── Milestone Timeline ───

@@ -25,7 +25,7 @@ export const DEFAULT_EXPENSES: ExpensesInfo = {
     other: 200,
   },
   annualInflationRate: 2.5,
-  postRetirementExpensePercent: 80,
+  postRetirementExpensePercent: 100,
 };
 
 export const DEFAULT_ASSETS: AssetsInfo = {
@@ -39,6 +39,7 @@ export const DEFAULT_ASSETS: AssetsInfo = {
 export const DEFAULT_INVESTMENT_STRATEGY: InvestmentStrategy = {
   riskProfile: 'moderate',
   expectedAnnualReturn: 7,
+  annualVolatility: 12,
   annualFees: 0.3,
   capitalGainsTaxRate: 26,
   stockAllocation: 80,
@@ -50,6 +51,7 @@ export const DEFAULT_FIRE_GOALS: FireGoals = {
   monthlyInvestment: 700,
   futureExpenses: [],
   futureIncomes: [],
+  recurringIncomes: [],
 };
 
 export const DEFAULT_INPUTS: FireInputs = {
@@ -61,11 +63,11 @@ export const DEFAULT_INPUTS: FireInputs = {
   fireGoals: DEFAULT_FIRE_GOALS,
 };
 
-export const RISK_PROFILES: Record<string, { label: string; return: number; stocks: number; description: string }> = {
-  conservative: { label: 'Conservative', return: 5, stocks: 40, description: 'Lower risk, stable growth — mostly bonds & cash' },
-  moderate: { label: 'Moderate', return: 7, stocks: 70, description: 'Balanced risk/reward — diversified mix' },
-  aggressive: { label: 'Aggressive', return: 9, stocks: 90, description: 'Higher risk, higher potential — equity-heavy' },
-  custom: { label: 'Custom', return: 7, stocks: 70, description: 'Set your own parameters' },
+export const RISK_PROFILES: Record<string, { label: string; return: number; volatility: number; stocks: number; description: string }> = {
+  conservative: { label: 'Conservative', return: 5, volatility: 7, stocks: 40, description: 'Lower risk, stable growth — mostly bonds & cash' },
+  moderate: { label: 'Moderate', return: 7, volatility: 12, stocks: 70, description: 'Balanced risk/reward — diversified mix' },
+  aggressive: { label: 'Aggressive', return: 9, volatility: 18, stocks: 90, description: 'Higher risk, higher potential — equity-heavy' },
+  custom: { label: 'Custom', return: 7, volatility: 12, stocks: 70, description: 'Set your own parameters' },
 };
 
 export const FIRE_TYPES: Record<string, { label: string; multiplier: number; description: string; emoji: string }> = {

@@ -53,6 +53,7 @@ function makeInputs(overrides: Partial<{
     investmentStrategy: {
       riskProfile: 'moderate',
       expectedAnnualReturn: overrides.expectedReturn ?? 7,
+      annualVolatility: 12,
       annualFees: overrides.annualFees ?? 0,
       capitalGainsTaxRate: overrides.capitalGainsTax ?? 0,
       stockAllocation: 80,
@@ -63,6 +64,7 @@ function makeInputs(overrides: Partial<{
       monthlyInvestment: overrides.monthlyInvestment ?? 1000,
       futureExpenses: [],
       futureIncomes: [],
+      recurringIncomes: [],
     },
   };
 }

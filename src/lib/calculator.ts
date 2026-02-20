@@ -1,5 +1,5 @@
 import type { FireInputs, FireResult, YearlyProjection } from '@/types';
-import type { PensionEntry } from './financial';
+import type { PensionEntry, RecurringIncomeEntry } from './financial';
 import { requiredPortfolio, survivesDrawdown } from './financial';
 
 /** Build PensionEntry list from user input pensions */
@@ -7,6 +7,17 @@ function toPensionEntries(inputs: FireInputs): PensionEntry[] {
   return inputs.income.pensions
     .filter(p => p.monthlyAmount > 0)
     .map(p => ({ annualAmount: p.monthlyAmount * 12, startAge: p.startAge }));
+}
+
+function toRecurringIncomeEntries(inputs: FireInputs): RecurringIncomeEntry[] {
+  return (inputs.fireGoals.recurringIncomes ?? [])
+    .filter((i) => i.monthlyAmount > 0)
+    .map((i) => ({
+      annualAmount: i.monthlyAmount * 12,
+      startAge: i.startAge,
+      annualGrowthRate: i.annualGrowthRate / 100,
+      includeInFire: i.includeInFire,
+    }));
 }
 
 export function calculateFire(inputs: FireInputs): FireResult {
@@ -37,6 +48,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
 
   // Build pension entries once
   const pensionEntries = toPensionEntries(inputs);
+  const recurringIncomeEntries = toRecurringIncomeEntries(inputs);
 
   const totalMonthlyIncome = income.monthlyNetSalary + income.additionalMonthlyIncome;
   const monthlyInvestment = fireGoals.monthlyInvestment;
@@ -98,6 +110,14 @@ export function calculateFire(inputs: FireInputs): FireResult {
       }
     }
 
+    // ── Recurring non-compounding income (e.g., rental property) ──
+    let recurringIncome = 0;
+    for (const inc of recurringIncomeEntries) {
+      if (age >= inc.startAge) {
+        recurringIncome += inc.annualAmount * Math.pow(1 + inc.annualGrowthRate, i);
+      }
+    }
+
     // ── One-time expenses (deducted from portfolio) ──
     const oneTimeExpenses = fireGoals.futureExpenses
       .filter((e) => e.yearsFromNow === i)
@@ -139,7 +159,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
         annualExpenses: livingExpenses + Math.max(0, -netOneTime),
         annualDebtPayments,
         passiveIncome,
-        totalIncome: totalAnnualIncome + pensionIncome,
+        totalIncome: totalAnnualIncome + pensionIncome + recurringIncome,
         cumulativeContributions,
         cumulativeGrowth,
         savingsRate:
@@ -155,7 +175,14 @@ export function calculateFire(inputs: FireInputs): FireResult {
 
       // Required portfolio in today's euros (multi-pension gap + residual model)
       const reqToday = requiredPortfolio(
-        retExpensesToday, pensionEntries, age, swr, realReturn,
+        retExpensesToday,
+        pensionEntries,
+        age,
+        swr,
+        realReturn,
+        personalInfo.lifeExpectancy,
+        inflation,
+        recurringIncomeEntries.filter((inc) => inc.startAge <= age || inc.includeInFire),
       );
 
       // Debt cost — PV of remaining fixed nominal payments
@@ -189,7 +216,10 @@ export function calculateFire(inputs: FireInputs): FireResult {
         const bridgeIncomes = fireGoals.futureIncomes
           .filter((e) => !!e.includeInFire && e.yearsFromNow > i);
 
-        if (bridgeIncomes.length > 0) {
+        const bridgeRecurring = recurringIncomeEntries
+          .filter((inc) => inc.includeInFire && inc.startAge > age);
+
+        if (bridgeIncomes.length > 0 || bridgeRecurring.length > 0) {
           const candidateRetExpenses = livingExpenses * postRetirementFactor;
           const survives = survivesDrawdown(
             portfolio,
@@ -204,6 +234,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
             // ALL future incomes go into simulation (bridge + non-bridge)
             fireGoals.futureIncomes.filter((e) => e.yearsFromNow > i),
             fireGoals.futureExpenses.filter((e) => e.yearsFromNow > i),
+            recurringIncomeEntries,
           );
           if (survives) {
             fireAge = age;
@@ -221,7 +252,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
       // retirementExpenses was set at retirement from actual inflated living
       // expenses, and continues to grow with inflation each iteration.
       const totalRetirementSpend = retirementExpenses + annualDebtPayments;
-      const withdrawal = Math.max(0, totalRetirementSpend - pensionIncome);
+      const withdrawal = Math.max(0, totalRetirementSpend - pensionIncome - recurringIncome);
       const growth = portfolio * netReturn;
       const growthOpt = portfolioOpt * (netReturn + 0.02);
       const growthPess = portfolioPess * Math.max(0, netReturn - 0.02);
@@ -242,7 +273,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
         annualExpenses: retirementExpenses + Math.max(0, -netOneTime),
         annualDebtPayments,
         passiveIncome: portfolio * swr,
-        totalIncome: pensionIncome,
+        totalIncome: pensionIncome + recurringIncome,
         cumulativeContributions,
         cumulativeGrowth,
         savingsRate: 0,
@@ -270,7 +301,16 @@ export function calculateFire(inputs: FireInputs): FireResult {
 
   // The FIRE number shown to the user is the adjusted target at the projected FIRE age.
   const retExpTdy = baseAnnualExpenses * postRetirementFactor;
-  const adjustedFireNumberToday = requiredPortfolio(retExpTdy, pensionEntries, fireAge, swr, realReturn) + debtCostAtFire;
+  const adjustedFireNumberToday = requiredPortfolio(
+    retExpTdy,
+    pensionEntries,
+    fireAge,
+    swr,
+    realReturn,
+    personalInfo.lifeExpectancy,
+    inflation,
+    recurringIncomeEntries.filter((inc) => inc.startAge <= fireAge || inc.includeInFire),
+  ) + debtCostAtFire;
   const fireNumber = adjustedFireNumberToday * Math.pow(1 + inflation, yearsToFire);
 
   const fireDate = new Date();
@@ -286,6 +326,9 @@ export function calculateFire(inputs: FireInputs): FireResult {
     coastTargetAge,
     swr,
     realReturn,
+    personalInfo.lifeExpectancy,
+    inflation,
+    recurringIncomeEntries.filter((inc) => inc.startAge <= coastTargetAge || inc.includeInFire),
   );
   const coastTarget = coastReqToday *
     Math.pow(1 + inflation, coastTargetAge - personalInfo.currentAge);

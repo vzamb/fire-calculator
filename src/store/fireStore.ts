@@ -53,7 +53,17 @@ export const useFireStore = create<FireStore>()(
       result: recalculate(DEFAULT_INPUTS),
 
       setInputs: (newInputs) => {
-        const inputs = { ...get().inputs, ...newInputs };
+        const current = get().inputs;
+        const inputs = {
+          ...current,
+          ...newInputs,
+          personalInfo: { ...current.personalInfo, ...newInputs.personalInfo },
+          income: { ...current.income, ...newInputs.income },
+          expenses: { ...current.expenses, ...newInputs.expenses },
+          assets: { ...current.assets, ...newInputs.assets },
+          investmentStrategy: { ...current.investmentStrategy, ...newInputs.investmentStrategy },
+          fireGoals: { ...current.fireGoals, ...newInputs.fireGoals },
+        };
         set({ inputs, result: recalculate(inputs) });
       },
       updatePersonalInfo: (data) => {
@@ -167,6 +177,14 @@ export const useFireStore = create<FireStore>()(
                 : [];
               delete income.pensionMonthlyAmount;
               delete income.pensionStartAge;
+            }
+
+            if (typeof state.inputs.investmentStrategy.annualVolatility !== 'number') {
+              state.inputs.investmentStrategy.annualVolatility = DEFAULT_INPUTS.investmentStrategy.annualVolatility;
+            }
+
+            if (!Array.isArray(state.inputs.fireGoals.recurringIncomes)) {
+              state.inputs.fireGoals.recurringIncomes = DEFAULT_INPUTS.fireGoals.recurringIncomes;
             }
 
             // Recalculate after rehydration from localStorage

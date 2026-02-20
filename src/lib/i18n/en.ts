@@ -83,6 +83,12 @@ export const en: Translations = {
   custom: 'Custom',
   customDesc: 'Set your own parameters',
   expectedAnnualReturn: 'Expected Annual Return',
+  annualVolatility: 'Annual Volatility',
+  annualVolatilityTooltip: 'Expected yearly variability of returns. Higher volatility = wider uncertainty range in Monte Carlo.',
+  volatilityLow: 'Low',
+  volatilityMedium: 'Medium',
+  volatilityHigh: 'High',
+  volatilityVeryHigh: 'Very High',
   capitalGainsTax: 'Capital Gains Tax',
   capitalGainsTaxTooltip: 'Tax on investment gains (26% in Italy). Applied only to growth, not contributions.',
 
@@ -97,6 +103,13 @@ export const en: Translations = {
   expectedFutureIncome: 'Expected Future Income',
   noFutureIncome: 'Inheritance, severance, property sale, etc.',
   incomePlaceholder: (i) => `Income ${i} (e.g., Inheritance)`,
+  recurringIncomeStreams: 'Recurring Income Streams',
+  noRecurringIncome: 'No recurring income streams (rent, royalties, etc.)',
+  recurringIncomePlaceholder: (i) => `Income Stream ${i} (e.g., Second-home rent)`,
+  recurringMonthlyIncome: 'Monthly Income',
+  recurringIncomeStartAge: 'Start Age',
+  recurringIncomeGrowth: 'Annual Growth',
+  recurringIncludeInFireLabel: 'Count this stream in FIRE target',
   includeInFireLabel: 'Included in FIRE target — retire earlier (riskier)',
   postFireBonusLabel: 'Post-FIRE bonus only',
   bridgeStrategyLabel: 'Bridge strategy',
@@ -201,7 +214,7 @@ export const en: Translations = {
 
   // ─── Monte Carlo ───
   monteCarloTitle: 'Monte Carlo Simulation',
-  monteCarloDesc: '500 randomized simulations using historical market volatility. Shows the range of possible outcomes for your portfolio.',
+  monteCarloDesc: (volatility) => `500 randomized simulations using ${volatility}% annual volatility. Shows the range of possible outcomes for your portfolio.`,
   monteCarloSuccess: 'Survival rate',
   monteCarloMedianAge: 'Median FIRE age',
   monteCarloSimulations: 'Simulations',
@@ -210,7 +223,7 @@ export const en: Translations = {
   monteCarloMedian: 'Median (50th)',
   monteCarloP75: '75th percentile',
   monteCarloP95: '95th percentile (best)',
-  monteCarloFootnote: 'Log-normal returns with ~12% annual volatility. Past performance does not guarantee future results.',
+  monteCarloFootnote: (volatility) => `Log-normal returns with ${volatility}% annual volatility. Past performance does not guarantee future results.`,
   monteCarloTargetAge: 'Target retirement age',
 
   // ─── Milestone Timeline ───

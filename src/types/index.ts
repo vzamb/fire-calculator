@@ -60,6 +60,7 @@ export type RiskProfile = 'conservative' | 'moderate' | 'aggressive' | 'custom';
 export interface InvestmentStrategy {
   riskProfile: RiskProfile;
   expectedAnnualReturn: number; // percentage
+  annualVolatility: number; // percentage
   annualFees: number; // percentage (TER)
   capitalGainsTaxRate: number; // percentage
   stockAllocation: number; // percentage (rest is bonds)
@@ -74,6 +75,16 @@ export interface FireGoals {
   monthlyInvestment: number; // how much user invests per month
   futureExpenses: FutureExpense[];
   futureIncomes: FutureIncome[];
+  recurringIncomes: RecurringIncome[];
+}
+
+export interface RecurringIncome {
+  id: string;
+  name: string;
+  monthlyAmount: number;
+  startAge: number;
+  annualGrowthRate: number; // percentage
+  includeInFire: boolean;
 }
 
 export interface FutureExpense {

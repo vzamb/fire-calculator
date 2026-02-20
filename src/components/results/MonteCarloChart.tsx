@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   AreaChart,
   Area,
@@ -11,37 +11,44 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { formatCurrencyCompact, formatCurrency } from '@/lib/formatters';
+import { cn } from '@/lib/utils';
 import { useFireStore } from '@/store/fireStore';
-import { runMonteCarlo } from '@/lib/monteCarlo';
-import { Dice5 } from 'lucide-react';
+import { useMonteCarloWorker } from '@/lib/useMonteCarloWorker';
+import { Dice5, Loader2 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
 export function MonteCarloChart() {
-  const { inputs, result } = useFireStore();
+  const { inputs, result, updateInvestmentStrategy } = useFireStore();
   const t = useT();
+  const volatility = inputs.investmentStrategy.annualVolatility;
+  const volatilityLabel = volatility.toFixed(1);
 
   // Target FIRE age slider — null means "use computed FIRE age"
   const [targetAge, setTargetAge] = useState<number | null>(null);
   const effectiveTarget = targetAge ?? result.fireAge;
   const isCustomTarget = targetAge !== null && targetAge !== result.fireAge;
 
-  const mc = useMemo(
-    () => runMonteCarlo(inputs, 500, targetAge ?? undefined),
-    [inputs, targetAge],
-  );
+  // Off-thread computation — never blocks the main thread.
+  const { mc, isComputing } = useMonteCarloWorker(inputs, 500, targetAge ?? undefined);
 
-  const data = mc.ages.map((age, i) => ({
-    age,
-    p5: Math.round(mc.percentiles.p5[i] ?? 0),
-    p25: Math.round(mc.percentiles.p25[i] ?? 0),
-    p50: Math.round(mc.percentiles.p50[i] ?? 0),
-    p75: Math.round(mc.percentiles.p75[i] ?? 0),
-    p95: Math.round(mc.percentiles.p95[i] ?? 0),
-  }));
+  // While the worker hasn't returned yet, show nothing on the chart but
+  // keep all controls interactive.
+  const data = mc
+    ? mc.ages.map((age, i) => ({
+        age,
+        p5: Math.round(mc.percentiles.p5[i] ?? 0),
+        p25: Math.round(mc.percentiles.p25[i] ?? 0),
+        p50: Math.round(mc.percentiles.p50[i] ?? 0),
+        p75: Math.round(mc.percentiles.p75[i] ?? 0),
+        p95: Math.round(mc.percentiles.p95[i] ?? 0),
+      }))
+    : [];
 
-  const successColor = mc.successRate >= 90
+  const successRate = mc?.successRate ?? 0;
+  const numSimulations = mc?.numSimulations ?? 500;
+  const successColor = successRate >= 90
     ? 'text-emerald-500'
-    : mc.successRate >= 70
+    : successRate >= 70
     ? 'text-amber-500'
     : 'text-destructive';
 
@@ -51,12 +58,40 @@ export function MonteCarloChart() {
         <CardTitle className="flex items-center gap-2">
           <Dice5 className="w-4 h-4 text-primary" />
           {t.monteCarloTitle}
+          {isComputing && <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin" />}
         </CardTitle>
         <p className="text-xs text-muted-foreground mt-1">
-          {t.monteCarloDesc}
+          {t.monteCarloDesc(volatilityLabel)}
         </p>
       </CardHeader>
       <CardContent>
+        {/* Portfolio volatility presets */}
+        <div className="mb-4">
+          <p className="text-xs font-medium text-foreground mb-2">{t.annualVolatility}</p>
+          <div className="grid grid-cols-4 gap-1.5">
+            {([
+              { label: t.volatilityLow,      value: 7  },
+              { label: t.volatilityMedium,   value: 12 },
+              { label: t.volatilityHigh,     value: 18 },
+              { label: t.volatilityVeryHigh, value: 25 },
+            ] as const).map((preset) => (
+              <button
+                key={preset.value}
+                onClick={() => updateInvestmentStrategy({ annualVolatility: preset.value, riskProfile: 'custom' })}
+                className={cn(
+                  'flex flex-col items-center py-1.5 px-1 rounded-lg border text-center transition-all',
+                  volatility === preset.value
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                    : 'border-border hover:border-primary/30',
+                )}
+              >
+                <span className="text-[11px] font-semibold leading-tight">{preset.label}</span>
+                <span className="text-[10px] text-muted-foreground">{preset.value}%</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Target FIRE age slider */}
         <div className="mb-4 px-1">
           <div className="flex items-center justify-between mb-1.5">
@@ -95,7 +130,7 @@ export function MonteCarloChart() {
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div className="text-center">
             <p className={`text-2xl font-bold ${successColor}`}>
-              {mc.successRate.toFixed(0)}%
+              {mc ? successRate.toFixed(0) : '—'}%
             </p>
             <p className="text-[10px] text-muted-foreground">{t.monteCarloSuccess}</p>
           </div>
@@ -107,13 +142,13 @@ export function MonteCarloChart() {
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-muted-foreground">
-              {mc.numSimulations}
+              {numSimulations}
             </p>
             <p className="text-[10px] text-muted-foreground">{t.monteCarloSimulations}</p>
           </div>
         </div>
 
-        <div className="h-[350px] w-full">
+        <div className={cn('h-[350px] w-full transition-opacity duration-300', isComputing && 'opacity-40')}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
               <defs>
@@ -226,7 +261,7 @@ export function MonteCarloChart() {
         </div>
 
         <p className="text-[10px] text-muted-foreground mt-2 text-center">
-          {t.monteCarloFootnote}
+          {t.monteCarloFootnote(volatilityLabel)}
         </p>
       </CardContent>
     </Card>

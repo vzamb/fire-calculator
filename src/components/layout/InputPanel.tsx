@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Plus, Trash2 } from 'lucide-react';
 import { RISK_PROFILES, FIRE_TYPES } from '@/lib/constants';
-import type { RiskProfile, FireType, Debt, FutureExpense, FutureIncome, Pension } from '@/types';
+import type { RiskProfile, FireType, Debt, FutureExpense, FutureIncome, Pension, RecurringIncome } from '@/types';
 import { formatCurrency } from '@/lib/formatters';
 import { useT, tKey } from '@/lib/i18n';
 import { ProfileManager } from './ProfileManager';
@@ -297,6 +297,7 @@ export function InputPanel() {
                   updateInvestmentStrategy({
                     riskProfile: key as RiskProfile,
                     expectedAnnualReturn: profile.return,
+                    annualVolatility: profile.volatility,
                     stockAllocation: profile.stocks,
                   });
                 }
@@ -546,6 +547,7 @@ function AssetsSection() {
 function LifeEventsSection() {
   const { inputs, updateFireGoals } = useFireStore();
   const { fireGoals } = inputs;
+  const { currentAge } = inputs.personalInfo;
   const t = useT();
 
   // ── Future Expenses ──
@@ -591,9 +593,34 @@ function LifeEventsSection() {
     updateFireGoals({ futureIncomes: (fireGoals.futureIncomes ?? []).filter((e) => e.id !== id) });
   };
 
+  // ── Recurring Incomes (e.g., second-home rent) ──
+  const addRecurringIncome = () => {
+    const inc: RecurringIncome = {
+      id: crypto.randomUUID(),
+      name: '',
+      monthlyAmount: 0,
+      startAge: currentAge,
+      annualGrowthRate: 2,
+      includeInFire: true,
+    };
+    updateFireGoals({ recurringIncomes: [...(fireGoals.recurringIncomes ?? []), inc] });
+  };
+
+  const updateRecurringIncome = (id: string, data: Partial<RecurringIncome>) => {
+    updateFireGoals({
+      recurringIncomes: (fireGoals.recurringIncomes ?? []).map((e) => (e.id === id ? { ...e, ...data } : e)),
+    });
+  };
+
+  const removeRecurringIncome = (id: string) => {
+    updateFireGoals({ recurringIncomes: (fireGoals.recurringIncomes ?? []).filter((e) => e.id !== id) });
+  };
+
   const futureIncomes = fireGoals.futureIncomes ?? [];
+  const recurringIncomes = fireGoals.recurringIncomes ?? [];
   const totalExpenses = fireGoals.futureExpenses.reduce((s, e) => s + e.amount, 0);
-  const totalIncomes = futureIncomes.reduce((s, e) => s + e.amount, 0);
+  const totalIncomes = futureIncomes.reduce((s, e) => s + e.amount, 0)
+    + recurringIncomes.reduce((s, e) => s + e.monthlyAmount * 12, 0);
   const netEvents = totalIncomes - totalExpenses;
   const summaryParts: string[] = [];
   if (fireGoals.futureExpenses.length > 0) summaryParts.push(t.expenseCount(fireGoals.futureExpenses.length));
@@ -713,6 +740,84 @@ function LifeEventsSection() {
                   inc.includeInFire ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'
                 )}>
                   {t.bridgeStrategyLabel}
+                </span>
+                <span className="text-[9px] text-muted-foreground leading-tight mt-0.5">
+                  {t.bridgeStrategyHint}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Recurring Income Streams ── */}
+      <div className="pt-3 border-t border-border">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-xs font-medium text-muted-foreground">{t.recurringIncomeStreams}</h4>
+          <Button variant="outline" size="sm" onClick={addRecurringIncome} className="h-7 text-xs">
+            <Plus className="w-3 h-3 mr-1" /> {t.add}
+          </Button>
+        </div>
+        {recurringIncomes.length === 0 && (
+          <p className="text-xs text-muted-foreground/60 text-center py-2">
+            {t.noRecurringIncome}
+          </p>
+        )}
+        {recurringIncomes.map((inc, i) => (
+          <div key={inc.id} className="border border-border rounded-lg p-3 mb-2 space-y-2 animate-slide-up">
+            <div className="flex items-center justify-between">
+              <Input
+                type="text"
+                value={inc.name}
+                onChange={(e) => updateRecurringIncome(inc.id, { name: e.target.value })}
+                placeholder={t.recurringIncomePlaceholder(i + 1)}
+                className="border-0 bg-transparent p-0 h-auto text-sm font-medium focus-visible:ring-0"
+              />
+              <Button variant="ghost" size="icon" onClick={() => removeRecurringIncome(inc.id)}
+                className="text-destructive h-7 w-7">
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <CurrencyInput label={t.recurringMonthlyIncome} value={inc.monthlyAmount}
+                onChange={(v) => updateRecurringIncome(inc.id, { monthlyAmount: v })} />
+              <NumberInput label={t.recurringIncomeStartAge} value={inc.startAge}
+                onChange={(v) => updateRecurringIncome(inc.id, { startAge: v })}
+                suffix=" yrs" min={currentAge} max={90} />
+            </div>
+            <PercentInput
+              label={t.recurringIncomeGrowth}
+              value={inc.annualGrowthRate}
+              onChange={(v) => updateRecurringIncome(inc.id, { annualGrowthRate: v })}
+              step={0.25}
+              min={-5}
+              max={15}
+            />
+            <div className="flex items-center gap-2.5 mt-1">
+              <button
+                onClick={() => updateRecurringIncome(inc.id, { includeInFire: !inc.includeInFire })}
+                className={cn(
+                  'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                  inc.includeInFire
+                    ? 'bg-orange-500'
+                    : 'bg-muted'
+                )}
+                role="switch"
+                aria-checked={inc.includeInFire}
+              >
+                <span
+                  className={cn(
+                    'pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm transition-transform',
+                    inc.includeInFire ? 'translate-x-4' : 'translate-x-0'
+                  )}
+                />
+              </button>
+              <div className="flex flex-col">
+                <span className={cn(
+                  'text-[11px] font-medium leading-tight',
+                  inc.includeInFire ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'
+                )}>
+                  {t.recurringIncludeInFireLabel}
                 </span>
                 <span className="text-[9px] text-muted-foreground leading-tight mt-0.5">
                   {t.bridgeStrategyHint}

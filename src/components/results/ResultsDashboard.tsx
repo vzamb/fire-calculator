@@ -1,12 +1,12 @@
 import { useFireStore } from '@/store/fireStore';
 import { SummaryCards } from './SummaryCards';
+import { MilestoneTimeline } from './MilestoneTimeline';
 import { ProjectionChart } from './ProjectionChart';
+import { MonteCarloChart } from './MonteCarloChart';
 import { IncomeExpenseChart } from './IncomeExpenseChart';
 import { WithdrawalChart } from './WithdrawalChart';
 import { BreakdownChart } from './BreakdownChart';
 import { ScenarioComparison } from './ScenarioComparison';
-import { MonteCarloChart } from './MonteCarloChart';
-import { MilestoneTimeline } from './MilestoneTimeline';
 import { formatCurrency } from '@/lib/formatters';
 import { Info } from 'lucide-react';
 import { useT } from '@/lib/i18n';
