@@ -8,11 +8,11 @@ describe('runMonteCarlo', () => {
     const result = runMonteCarlo(DEFAULT_INPUTS, 100);
     expect(result.numSimulations).toBe(100);
     expect(result.ages.length).toBeGreaterThan(0);
-    expect(result.percentiles.p5.length).toBe(result.ages.length);
+    expect(result.percentiles.p10.length).toBe(result.ages.length);
     expect(result.percentiles.p25.length).toBe(result.ages.length);
     expect(result.percentiles.p50.length).toBe(result.ages.length);
     expect(result.percentiles.p75.length).toBe(result.ages.length);
-    expect(result.percentiles.p95.length).toBe(result.ages.length);
+    expect(result.percentiles.p90.length).toBe(result.ages.length);
     expect(result.successRate).toBeGreaterThanOrEqual(0);
     expect(result.successRate).toBeLessThanOrEqual(100);
     expect(result.medianFireAge).toBeGreaterThan(0);
@@ -40,10 +40,10 @@ describe('runMonteCarlo', () => {
   it('percentiles are ordered correctly at each age', () => {
     const result = runMonteCarlo(DEFAULT_INPUTS, 200);
     for (let i = 0; i < result.ages.length; i++) {
-      expect(result.percentiles.p5[i]!).toBeLessThanOrEqual(result.percentiles.p25[i]!);
+      expect(result.percentiles.p10[i]!).toBeLessThanOrEqual(result.percentiles.p25[i]!);
       expect(result.percentiles.p25[i]!).toBeLessThanOrEqual(result.percentiles.p50[i]!);
       expect(result.percentiles.p50[i]!).toBeLessThanOrEqual(result.percentiles.p75[i]!);
-      expect(result.percentiles.p75[i]!).toBeLessThanOrEqual(result.percentiles.p95[i]!);
+      expect(result.percentiles.p75[i]!).toBeLessThanOrEqual(result.percentiles.p90[i]!);
     }
   });
 

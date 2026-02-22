@@ -26,6 +26,7 @@ export const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat(localeMap[_activeLocale] ?? 'en-GB', {
     style: 'currency',
     currency: _activeCurrency,
+    currencyDisplay: 'narrowSymbol',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);

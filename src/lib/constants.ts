@@ -16,14 +16,6 @@ export const DEFAULT_INCOME: IncomeInfo = {
 
 export const DEFAULT_EXPENSES: ExpensesInfo = {
   monthlyExpenses: 1800,
-  expenseBreakdown: {
-    housing: 700,
-    food: 350,
-    transport: 200,
-    insurance: 150,
-    leisure: 200,
-    other: 200,
-  },
   annualInflationRate: 2.5,
   postRetirementExpensePercent: 100,
 };
@@ -130,6 +122,8 @@ export const DEFAULT_FIRE_GOALS: FireGoals = {
   futureIncomes: [],
   recurringIncomes: [],
 };
+
+export const COAST_TARGET_AGE = 65;
 
 export const DEFAULT_INPUTS: FireInputs = {
   personalInfo: DEFAULT_PERSONAL_INFO,

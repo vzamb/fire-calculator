@@ -1,7 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
+import fastDeepEqual from 'fast-deep-equal';
 import type { FireInputs } from '@/types';
 import type { MonteCarloResult } from './monteCarlo';
 import type { MCWorkerRequest, MCWorkerResponse } from './monteCarlo.worker';
+
+/**
+ * Custom hook that acts like useEffect but does a deep comparison of dependencies.
+ */
+function useDeepCompareEffect(callback: React.EffectCallback, dependencies: any[]) {
+  const currentDependenciesRef = useRef<any[]>([]);
+
+  if (!fastDeepEqual(currentDependenciesRef.current, dependencies)) {
+    currentDependenciesRef.current = dependencies;
+  }
+
+  useEffect(callback, [currentDependenciesRef.current]);
+}
 
 /**
  * Runs Monte Carlo simulations in a Web Worker so the main thread is never
@@ -45,7 +59,7 @@ export function useMonteCarloWorker(
 
   // Debounce + dispatch: whenever meaningful inputs change, wait 300 ms then
   // send to the worker. The UI is fully responsive throughout.
-  useEffect(() => {
+  useDeepCompareEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     setIsComputing(true);
@@ -63,10 +77,7 @@ export function useMonteCarloWorker(
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-    // JSON comparison kept outside to avoid referential churn — the worker
-    // dispatch is cheap to debounce on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(inputs), numSimulations, targetFireAge]);
+  }, [inputs, numSimulations, targetFireAge]);
 
   return { mc, isComputing };
 }

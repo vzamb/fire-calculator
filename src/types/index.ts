@@ -22,18 +22,8 @@ export interface IncomeInfo {
 // ─── Expenses ───
 export interface ExpensesInfo {
   monthlyExpenses: number;
-  expenseBreakdown: ExpenseBreakdown;
   annualInflationRate: number; // percentage
   postRetirementExpensePercent: number; // percentage of current expenses
-}
-
-export interface ExpenseBreakdown {
-  housing: number;
-  food: number;
-  transport: number;
-  insurance: number;
-  leisure: number;
-  other: number;
 }
 
 // ─── Assets ───
@@ -61,6 +51,7 @@ export interface RealEstateAsset {
   propertyValue: number;       // total value of property (display only, not compounding)
   monthlyNetIncome: number;    // net rental income after costs/taxes
   annualAppreciation: number;  // % yearly property value growth (not portfolio return)
+  rentalGrowthRate?: number;   // % yearly rental income growth (defaults to inflation if undefined)
 }
 
 // ─── Investment Strategy ───

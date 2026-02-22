@@ -41,16 +41,6 @@ export interface Translations {
   expensesSection: string;
   monthlyLivingExpenses: string;
   monthlyLivingExpensesTooltip: string;
-  hideBreakdown: string;
-  detailedBreakdown: string;
-  housing: string;
-  food: string;
-  transport: string;
-  insurance: string;
-  leisure: string;
-  other: string;
-  breakdownLabel: string;
-  useThisTotal: string;
   annualInflation: string;
   annualInflationTooltip: string;
   postRetirementSpending: string;
@@ -196,6 +186,15 @@ export interface Translations {
   pessimisticLabel: string;
   ageLabel: string;
   ageAxis: string;
+  yearlyProjections: string;
+  age: string;
+  year: string;
+  portfolio: string;
+  contributions: string;
+  growth: string;
+  expenses: string;
+  page: string;
+  of: string;
 
   incomeVsExpenses: string;
   incomeVsExpensesDesc: string;
@@ -238,11 +237,11 @@ export interface Translations {
   monteCarloSuccess: string;
   monteCarloMedianAge: string;
   monteCarloSimulations: string;
-  monteCarloP5: string;
+  monteCarloP10: string;
   monteCarloP25: string;
-  monteCarloMedian: string;
+  monteCarloP50: string;
   monteCarloP75: string;
-  monteCarloP95: string;
+  monteCarloP90: string;
   monteCarloFootnote: (volatility: string) => string;
   monteCarloTargetAge: string;
 

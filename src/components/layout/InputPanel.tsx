@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, User, Wallet, Receipt, Landmark, TrendingUp, Target, PiggyBank, CalendarClock, Lock, Unlock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFireStore } from '@/store/fireStore';
+import { useUIStore } from '@/store/uiStore';
 import { Slider } from '@/components/ui/Slider';
 import { CurrencyInput, PercentInput, NumberInput } from '@/components/shared/FormFields';
 import { Input } from '@/components/ui/Input';
@@ -30,12 +31,12 @@ function Section({
   summary?: string;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
+  const { expandedSections, toggleSection } = useUIStore();
 
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-card transition-shadow hover:shadow-sm">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => toggleSection(title)}
         className="w-full flex items-center gap-3 p-4 text-left hover:bg-secondary/30 transition-colors"
       >
         <div className={cn('flex items-center justify-center w-8 h-8 rounded-lg shrink-0', iconBg)}>
@@ -43,19 +44,19 @@ function Section({
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold">{title}</p>
-          {summary && !open && (
+          {summary && !expandedSections.has(title) && (
             <p className="text-xs text-muted-foreground truncate mt-0.5">{summary}</p>
           )}
         </div>
         <ChevronDown
           className={cn(
             'w-4 h-4 text-muted-foreground transition-transform shrink-0',
-            open && 'rotate-180'
+            expandedSections.has(title) && 'rotate-180'
           )}
         />
       </button>
       <AnimatePresence initial={false}>
-        {open && (
+        {expandedSections.has(title) && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
@@ -566,14 +567,11 @@ export function InputPanel() {
   );
 }
 
-// ─── Expenses Section (with breakdown toggle) ───
+// ─── Expenses Section ───
 function ExpensesSection() {
   const { inputs, updateExpenses } = useFireStore();
   const { expenses } = inputs;
-  const [showBreakdown, setShowBreakdown] = useState(false);
   const t = useT();
-
-  const breakdownTotal = Object.values(expenses.expenseBreakdown).reduce((s, v) => s + v, 0);
 
   return (
     <Section
@@ -589,43 +587,6 @@ function ExpensesSection() {
         value={expenses.monthlyExpenses}
         onChange={(v) => updateExpenses({ monthlyExpenses: v })}
       />
-
-      <button
-        onClick={() => setShowBreakdown(!showBreakdown)}
-        className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
-      >
-        {showBreakdown ? t.hideBreakdown : t.detailedBreakdown}
-      </button>
-
-      {showBreakdown && (
-        <div className="grid grid-cols-2 gap-3 animate-slide-up">
-          <CurrencyInput label={t.housing} value={expenses.expenseBreakdown.housing}
-            onChange={(v) => updateExpenses({ expenseBreakdown: { ...expenses.expenseBreakdown, housing: v } })} />
-          <CurrencyInput label={t.food} value={expenses.expenseBreakdown.food}
-            onChange={(v) => updateExpenses({ expenseBreakdown: { ...expenses.expenseBreakdown, food: v } })} />
-          <CurrencyInput label={t.transport} value={expenses.expenseBreakdown.transport}
-            onChange={(v) => updateExpenses({ expenseBreakdown: { ...expenses.expenseBreakdown, transport: v } })} />
-          <CurrencyInput label={t.insurance} value={expenses.expenseBreakdown.insurance}
-            onChange={(v) => updateExpenses({ expenseBreakdown: { ...expenses.expenseBreakdown, insurance: v } })} />
-          <CurrencyInput label={t.leisure} value={expenses.expenseBreakdown.leisure}
-            onChange={(v) => updateExpenses({ expenseBreakdown: { ...expenses.expenseBreakdown, leisure: v } })} />
-          <CurrencyInput label={t.other} value={expenses.expenseBreakdown.other}
-            onChange={(v) => updateExpenses({ expenseBreakdown: { ...expenses.expenseBreakdown, other: v } })} />
-          {breakdownTotal !== expenses.monthlyExpenses && (
-            <div className="col-span-2 flex items-center justify-between bg-primary/5 border border-primary/20 rounded-lg p-2.5">
-              <p className="text-xs text-muted-foreground">
-                {t.breakdownLabel}: <span className="font-semibold text-foreground">{formatCurrency(breakdownTotal)}</span>
-              </p>
-              <button
-                onClick={() => updateExpenses({ monthlyExpenses: breakdownTotal })}
-                className="text-xs text-primary font-medium hover:underline"
-              >
-                {t.useThisTotal}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
 
       <PercentInput
         label={t.annualInflation}

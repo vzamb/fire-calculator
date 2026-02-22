@@ -7,6 +7,7 @@ import { IncomeExpenseChart } from './IncomeExpenseChart';
 import { WithdrawalChart } from './WithdrawalChart';
 import { BreakdownChart } from './BreakdownChart';
 import { ScenarioComparison } from './ScenarioComparison';
+import { YearlyProjectionsTable } from './YearlyProjectionsTable';
 import { formatCurrency } from '@/lib/formatters';
 import { Info } from 'lucide-react';
 import { useT } from '@/lib/i18n';
@@ -140,6 +141,12 @@ export function ResultsDashboard() {
 
       {/* Scenario Comparison */}
       <ScenarioComparison />
+
+      {/* Yearly Projections Table */}
+      <div className="bg-card border border-border rounded-xl p-4 sm:p-6 shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">{t.yearlyProjections}</h3>
+        <YearlyProjectionsTable />
+      </div>
     </div>
   );
 }

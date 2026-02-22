@@ -6,11 +6,11 @@ import { geometricReturn } from './constants';
 export interface MonteCarloResult {
   /** Percentile curves: age → portfolio value */
   percentiles: {
-    p5: number[];
+    p10: number[];
     p25: number[];
     p50: number[];
     p75: number[];
-    p95: number[];
+    p90: number[];
   };
   /** Ages corresponding to the percentile arrays */
   ages: number[];
@@ -83,7 +83,7 @@ export function runMonteCarlo(
   const annualFees = investmentStrategy.annualFees / 100;
   const capitalGainsTax = investmentStrategy.capitalGainsTaxRate / 100;
   // Arithmetic mean net return (used for random draws)
-  const arithmeticNet = (grossReturn - annualFees) * (1 - capitalGainsTax);
+  const arithmeticNet = grossReturn - annualFees;
   const volatility = (investmentStrategy.annualVolatility ?? 12) / 100;
   // Geometric net return (for deterministic FIRE checks inside sim)
   const geoNet = geometricReturn(arithmeticNet * 100, investmentStrategy.annualVolatility ?? 12) / 100;
@@ -93,7 +93,7 @@ export function runMonteCarlo(
   const realReturn = Math.max(0.001, (1 + geoNet) / (1 + inflation) - 1);
   const postRetirementFactor = expenses.postRetirementExpensePercent / 100;
   const baseAnnualExpenses = expenses.monthlyExpenses * 12;
-  const monthlyInvestment = fireGoals.monthlyInvestment;
+  const initialMonthlyInvestment = fireGoals.monthlyInvestment;
 
   const maxYears = personalInfo.lifeExpectancy - personalInfo.currentAge + 1;
   const startPortfolio = assets.investedAssets + assets.cashSavings + assets.otherAssets;
@@ -118,7 +118,7 @@ export function runMonteCarlo(
       .map((r) => ({
         annualAmount: r.monthlyNetIncome * 12,
         startAge: personalInfo.currentAge,
-        annualGrowthRate: r.annualAppreciation / 100,
+        annualGrowthRate: (r.rentalGrowthRate ?? expenses.annualInflationRate) / 100,
         includeInFire: true,
       })),
   ];
@@ -136,7 +136,9 @@ export function runMonteCarlo(
   for (let sim = 0; sim < numSimulations; sim++) {
     const path: number[] = [];
     let portfolio = startPortfolio;
+    let costBasis = startPortfolio;
     let livingExpenses = baseAnnualExpenses;
+    let currentMonthlyInvestment = initialMonthlyInvestment;
     let retirementExpenses = 0;
     let isRetired = false;
     let fireAge: number | null = null;
@@ -150,8 +152,9 @@ export function runMonteCarlo(
     for (let i = 0; i < maxYears; i++) {
       const age = personalInfo.currentAge + i;
 
-      // Random return for this year
-      const randomReturn = arithmeticNet + volatility * randn();
+      // Random return for this year (log-normal distribution)
+      const mu = Math.log(1 + arithmeticNet) - Math.pow(volatility, 2) / 2;
+      const randomReturn = Math.exp(mu + volatility * randn()) - 1;
 
       // Debt payments
       let annualDebtPayments = 0;
@@ -188,16 +191,27 @@ export function runMonteCarlo(
 
       if (!isRetired) {
         // Accumulation
-        const annualContribution = monthlyInvestment * 12;
+        const annualContribution = currentMonthlyInvestment * 12;
         const growth = portfolio * randomReturn;
         portfolio += growth + annualContribution + netOneTime;
         portfolio = Math.max(0, portfolio);
+
+        if (netOneTime > 0) {
+          costBasis += annualContribution + netOneTime;
+        } else {
+          costBasis += annualContribution;
+          const withdrawal = -netOneTime;
+          if (portfolio > 0) {
+            costBasis -= withdrawal * (costBasis / portfolio);
+          }
+        }
 
         // ── FIRE check (mirrors main calculator) ──
         const inflationMultiplier = Math.pow(1 + inflation, i);
         const retExpensesToday = baseAnnualExpenses * postRetirementFactor;
 
         // Required portfolio using multi-pension model
+        const currentCostBasisRatio = portfolio > 0 ? costBasis / portfolio : 1;
         const reqToday = requiredPortfolio(
           retExpensesToday,
           pensionEntries,
@@ -207,6 +221,8 @@ export function runMonteCarlo(
           personalInfo.lifeExpectancy,
           inflation,
           recurringIncomeEntries.filter((inc) => inc.startAge <= age || inc.includeInFire),
+          capitalGainsTax,
+          currentCostBasisRatio
         );
 
         // Debt cost — PV of remaining fixed nominal payments
@@ -214,8 +230,9 @@ export function runMonteCarlo(
         for (const d of remainingDebts) {
           if (d.yearsLeft > 0) {
             const ap = d.monthlyPayment * 12;
-            debtPV += geoNet > 0.001
-              ? ap * (1 - Math.pow(1 + geoNet, -d.yearsLeft)) / geoNet
+            const debtRate = (d as any).interestRate ? (d as any).interestRate / 100 : 0.03;
+            debtPV += debtRate > 0.001
+              ? ap * (1 - Math.pow(1 + debtRate, -d.yearsLeft)) / debtRate
               : ap * d.yearsLeft;
           }
         }
@@ -260,6 +277,8 @@ export function runMonteCarlo(
                 fireGoals.futureIncomes.filter((e) => e.yearsFromNow > i),
                 fireGoals.futureExpenses.filter((e) => e.yearsFromNow > i),
                 recurringIncomeEntries,
+                capitalGainsTax,
+                currentCostBasisRatio
               );
               if (survives) {
                 fireAge = age;
@@ -272,15 +291,38 @@ export function runMonteCarlo(
       } else {
         // Drawdown
         const totalSpend = retirementExpenses + annualDebtPayments;
-        const withdrawal = Math.max(0, totalSpend - pensionIncome - recurringIncome);
+        const netWithdrawal = Math.max(0, totalSpend - pensionIncome - recurringIncome);
+        
         const growth = portfolio * randomReturn;
-        portfolio += growth - withdrawal + netOneTime;
+        const portfolioBeforeWithdrawal = portfolio + growth;
+        
+        let grossWithdrawal = netWithdrawal;
+        if (netWithdrawal > 0 && portfolioBeforeWithdrawal > costBasis) {
+          const gainsPortion = (portfolioBeforeWithdrawal - costBasis) / portfolioBeforeWithdrawal;
+          grossWithdrawal = netWithdrawal / (1 - gainsPortion * capitalGainsTax);
+        }
+
+        portfolio += growth - grossWithdrawal + netOneTime;
         portfolio = Math.max(0, portfolio);
+        
+        if (grossWithdrawal > 0 && portfolioBeforeWithdrawal > 0) {
+          costBasis -= grossWithdrawal * (costBasis / portfolioBeforeWithdrawal);
+        }
+        if (netOneTime > 0) {
+          costBasis += netOneTime;
+        } else if (netOneTime < 0) {
+          const oneTimeWithdrawal = -netOneTime;
+          if (portfolio > 0) {
+            costBasis -= oneTimeWithdrawal * (costBasis / portfolio);
+          }
+        }
+        
         retirementExpenses *= 1 + inflation;
       }
 
       if (!isRetired) {
         livingExpenses *= 1 + inflation;
+        currentMonthlyInvestment *= 1 + income.annualSalaryGrowth / 100;
       }
 
       path.push(portfolio);
@@ -292,20 +334,20 @@ export function runMonteCarlo(
 
   // Compute percentiles at each year
   const ages: number[] = [];
-  const p5: number[] = [];
+  const p10: number[] = [];
   const p25: number[] = [];
   const p50: number[] = [];
   const p75: number[] = [];
-  const p95: number[] = [];
+  const p90: number[] = [];
 
   for (let i = 0; i < maxYears; i++) {
     ages.push(personalInfo.currentAge + i);
     const values = allPaths.map((path) => path[i] ?? 0).sort((a, b) => a - b);
-    p5.push(values[Math.floor(numSimulations * 0.05)] ?? 0);
+    p10.push(values[Math.floor(numSimulations * 0.10)] ?? 0);
     p25.push(values[Math.floor(numSimulations * 0.25)] ?? 0);
     p50.push(values[Math.floor(numSimulations * 0.50)] ?? 0);
     p75.push(values[Math.floor(numSimulations * 0.75)] ?? 0);
-    p95.push(values[Math.floor(numSimulations * 0.95)] ?? 0);
+    p90.push(values[Math.floor(numSimulations * 0.90)] ?? 0);
   }
 
   // Success rate: % of simulations with portfolio > 0 at life expectancy
@@ -326,7 +368,7 @@ export function runMonteCarlo(
   const medianFireAge = sortedFireAges[Math.floor(numSimulations / 2)] ?? personalInfo.currentAge;
 
   return {
-    percentiles: { p5, p25, p50, p75, p95 },
+    percentiles: { p10, p25, p50, p75, p90 },
     ages,
     successRate,
     fireAgeDistribution,

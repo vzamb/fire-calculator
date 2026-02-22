@@ -59,6 +59,8 @@ export function requiredPortfolio(
   lifeExpectancy?: number,
   inflation: number = 0,
   recurringIncomes: RecurringIncomeEntry[] = [],
+  capitalGainsTax: number = 0,
+  costBasisRatio: number = 1,
 ): number {
   if (lifeExpectancy == null) {
     const active = pensions.filter(p => p.annualAmount > 0);
@@ -106,14 +108,27 @@ export function requiredPortfolio(
 
   const survivesFrom = (startPortfolio: number): boolean => {
     let portfolio = startPortfolio;
+    let costBasis = startPortfolio * costBasisRatio;
     for (let age = fireAge; age <= lifeExpectancy; age++) {
       const pensionIncome = activePensions
         .filter((p) => age >= p.startAge)
         .reduce((sum, p) => sum + p.annualAmount, 0);
       const extraRecurring = recurringIncomeAtAge(recurringIncomes, age, fireAge, inflation);
-      const withdrawal = Math.max(0, retExpensesToday - pensionIncome - extraRecurring);
-      portfolio = portfolio * (1 + realReturn) - withdrawal;
+      const netWithdrawal = Math.max(0, retExpensesToday - pensionIncome - extraRecurring);
+      
+      const pBeforeWithdrawal = portfolio * (1 + realReturn);
+      let grossWithdrawal = netWithdrawal;
+      if (netWithdrawal > 0 && pBeforeWithdrawal > costBasis) {
+        const gainsPortion = (pBeforeWithdrawal - costBasis) / pBeforeWithdrawal;
+        grossWithdrawal = netWithdrawal / (1 - gainsPortion * capitalGainsTax);
+      }
+
+      portfolio = pBeforeWithdrawal - grossWithdrawal;
       if (portfolio < 0) return false;
+      
+      if (grossWithdrawal > 0 && pBeforeWithdrawal > 0) {
+        costBasis -= grossWithdrawal * (costBasis / pBeforeWithdrawal);
+      }
     }
     return true;
   };
@@ -154,8 +169,11 @@ export function survivesDrawdown(
   futureIncomes: Array<{ amount: number; yearsFromNow: number }>,
   futureExpenses: Array<{ amount: number; yearsFromNow: number }>,
   recurringIncomes: RecurringIncomeEntry[] = [],
+  capitalGainsTax: number = 0,
+  costBasisRatio: number = 1,
 ): boolean {
   let p = startPortfolio;
+  let costBasis = startPortfolio * costBasisRatio;
   let exp = retExpenses;
   const totalYears = lifeExpectancy - fireAge;
   for (let y = 0; y <= totalYears; y++) {
@@ -189,9 +207,30 @@ export function survivesDrawdown(
       if (ex.yearsFromNow === absYear) oneTime -= ex.amount;
     }
     const totalSpend = exp + debtPay;
-    const withdrawal = Math.max(0, totalSpend - pensionIncome - recurringIncome);
-    p += p * netReturn - withdrawal + oneTime;
+    const netWithdrawal = Math.max(0, totalSpend - pensionIncome - recurringIncome);
+    
+    const pBeforeWithdrawal = p * (1 + netReturn);
+    let grossWithdrawal = netWithdrawal;
+    if (netWithdrawal > 0 && pBeforeWithdrawal > costBasis) {
+      const gainsPortion = (pBeforeWithdrawal - costBasis) / pBeforeWithdrawal;
+      grossWithdrawal = netWithdrawal / (1 - gainsPortion * capitalGainsTax);
+    }
+
+    p = pBeforeWithdrawal - grossWithdrawal + oneTime;
     if (p < 0) return false;
+    
+    if (grossWithdrawal > 0 && pBeforeWithdrawal > 0) {
+      costBasis -= grossWithdrawal * (costBasis / pBeforeWithdrawal);
+    }
+    if (oneTime > 0) {
+      costBasis += oneTime;
+    } else if (oneTime < 0) {
+      const oneTimeWithdrawal = -oneTime;
+      if (p > 0) {
+        costBasis -= oneTimeWithdrawal * (costBasis / p);
+      }
+    }
+    
     exp *= 1 + inflation;
   }
   return true;

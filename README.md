@@ -27,7 +27,7 @@ A comprehensive **Financial Independence, Retire Early (FIRE)** calculator built
 
 ### Monte Carlo Simulation
 - **500 Randomized Scenarios** — Uses a seeded PRNG (Mulberry32) for deterministic, reproducible results
-- **Percentile Bands** — P5, P25, P50 (median), P75, P95 portfolio projections
+- **Percentile Bands** — P10, P25, P50 (median), P75, P90 portfolio projections
 - **Success Rate** — Percentage of simulations where portfolio lasts through retirement
 - **FIRE Age Distribution** — Histogram of when FIRE is achieved across simulations
 - **Target Age Mode** — Force a specific retirement age and see survival probability

@@ -28,18 +28,20 @@ export function MonteCarloChart() {
   const isCustomTarget = targetAge !== null && targetAge !== result.fireAge;
 
   // Off-thread computation — never blocks the main thread.
-  const { mc, isComputing } = useMonteCarloWorker(inputs, 500, targetAge ?? undefined);
+  // Always pass effectiveTarget so the simulation is consistent whether
+  // the user has touched the slider or not (forced-retirement mode).
+  const { mc, isComputing } = useMonteCarloWorker(inputs, 500, effectiveTarget);
 
   // While the worker hasn't returned yet, show nothing on the chart but
   // keep all controls interactive.
   const data = mc
     ? mc.ages.map((age, i) => ({
         age,
-        p5: Math.round(mc.percentiles.p5[i] ?? 0),
+        p10: Math.round(mc.percentiles.p10[i] ?? 0),
         p25: Math.round(mc.percentiles.p25[i] ?? 0),
         p50: Math.round(mc.percentiles.p50[i] ?? 0),
         p75: Math.round(mc.percentiles.p75[i] ?? 0),
-        p95: Math.round(mc.percentiles.p95[i] ?? 0),
+        p90: Math.round(mc.percentiles.p90[i] ?? 0),
       }))
     : [];
 
@@ -169,20 +171,20 @@ export function MonteCarloChart() {
                 labelStyle={{ color: 'hsl(var(--foreground))' }}
               />
 
-              {/* 5th-95th percentile band (outer) */}
+              {/* 10th-90th percentile band (outer) */}
               <Area
                 type="monotone"
-                dataKey="p95"
+                dataKey="p90"
                 stroke="none"
                 fill="url(#mc-outer)"
-                name={t.monteCarloP95}
+                name={t.monteCarloP90}
               />
               <Area
                 type="monotone"
-                dataKey="p5"
+                dataKey="p10"
                 stroke="none"
                 fill="hsl(var(--background))"
-                name={t.monteCarloP5}
+                name={t.monteCarloP10}
               />
 
               {/* 25th-75th percentile band (inner) */}
@@ -208,7 +210,7 @@ export function MonteCarloChart() {
                 stroke="hsl(var(--primary))"
                 strokeWidth={2}
                 fill="none"
-                name={t.monteCarloMedian}
+                name={t.monteCarloP50}
                 dot={false}
               />
 

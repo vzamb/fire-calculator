@@ -3,11 +3,13 @@ import { Header } from '@/components/layout/Header';
 import { InputPanel } from '@/components/layout/InputPanel';
 import { ResultsDashboard } from '@/components/results/ResultsDashboard';
 import { useFireStore } from '@/store/fireStore';
+import { useUIStore } from '@/store/uiStore';
 import { I18nContext, getTranslations } from '@/lib/i18n';
 import { extractSharedInputs } from '@/lib/sharing';
 
 function App() {
-  const { theme, setTheme, locale, setInputs } = useFireStore();
+  const { setInputs } = useFireStore();
+  const { theme, setTheme, locale } = useUIStore();
   const t = getTranslations(locale);
 
   // Apply theme on mount

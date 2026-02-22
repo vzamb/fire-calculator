@@ -2,12 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { Moon, Sun, RotateCcw, Share2, Check, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useFireStore } from '@/store/fireStore';
+import { useUIStore } from '@/store/uiStore';
 import { useT } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n/types';
 import { generateShareUrl } from '@/lib/sharing';
 
 export function Header() {
-  const { theme, setTheme, resetInputs, locale, setLocale, currency, setCurrency, inputs } = useFireStore();
+  const { resetInputs, inputs } = useFireStore();
+  const { theme, setTheme, locale, setLocale, currency, setCurrency } = useUIStore();
   const t = useT();
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);

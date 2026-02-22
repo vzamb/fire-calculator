@@ -39,7 +39,6 @@ function makeInputs(overrides: Partial<{
     },
     expenses: {
       monthlyExpenses: overrides.expenses ?? 2000,
-      expenseBreakdown: { housing: 700, food: 300, transport: 200, insurance: 100, leisure: 200, other: 500 },
       annualInflationRate: overrides.inflation ?? 2,
       postRetirementExpensePercent: overrides.postRetirementPercent ?? 100,
     },

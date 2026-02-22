@@ -1,10 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { FireInputs, FireResult, Theme } from '@/types';
-import type { Locale } from '@/lib/i18n';
+import type { FireInputs, FireResult } from '@/types';
 import { DEFAULT_INPUTS, DEFAULT_ASSET_RETURNS, computePortfolioStats } from '@/lib/constants';
 import { calculateFire } from '@/lib/calculator';
-import { setActiveCurrency, setActiveLocale } from '@/lib/formatters';
 
 interface FireStore {
   // Inputs
@@ -20,26 +18,6 @@ interface FireStore {
 
   // Results (auto-computed)
   result: FireResult;
-
-  // UI State — which input sections are expanded
-  expandedSections: Set<string>;
-  toggleSection: (section: string) => void;
-
-  // UI State — show real (inflation-adjusted) values
-  showRealValues: boolean;
-  toggleRealValues: () => void;
-
-  // Currency
-  currency: string;
-  setCurrency: (currency: string) => void;
-
-  // Theme
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-
-  // Language
-  locale: Locale;
-  setLocale: (locale: Locale) => void;
 }
 
 function recalculate(inputs: FireInputs): FireResult {
@@ -113,56 +91,11 @@ export const useFireStore = create<FireStore>()(
           inputs: DEFAULT_INPUTS,
           result: recalculate(DEFAULT_INPUTS),
         }),
-
-      expandedSections: new Set(['income', 'expenses']),
-      toggleSection: (section) =>
-        set((state) => {
-          const next = new Set(state.expandedSections);
-          if (next.has(section)) {
-            next.delete(section);
-          } else {
-            next.add(section);
-          }
-          return { expandedSections: next };
-        }),
-
-      showRealValues: false,
-      toggleRealValues: () => set((state) => ({ showRealValues: !state.showRealValues })),
-
-      currency: 'EUR',
-      setCurrency: (currency) => {
-        setActiveCurrency(currency);
-        set({ currency });
-      },
-
-      locale: 'en',
-      setLocale: (locale) => {
-        setActiveLocale(locale);
-        set({ locale });
-      },
-
-      theme: 'dark',
-      setTheme: (theme) => {
-        set({ theme });
-        const root = document.documentElement;
-        root.classList.remove('light', 'dark');
-        if (theme === 'system') {
-          const systemDark = window.matchMedia(
-            '(prefers-color-scheme: dark)'
-          ).matches;
-          root.classList.add(systemDark ? 'dark' : 'light');
-        } else {
-          root.classList.add(theme);
-        }
-      },
     }),
     {
       name: 'fire-calculator-storage',
       partialize: (state) => ({
         inputs: state.inputs,
-        theme: state.theme,
-        locale: state.locale,
-        currency: state.currency,
       }),
       onRehydrateStorage: () => {
         return (state) => {
@@ -235,9 +168,6 @@ export const useFireStore = create<FireStore>()(
 
             // Recalculate after rehydration from localStorage
             state.result = recalculate(state.inputs);
-            // Sync currency and locale to formatter module
-            setActiveCurrency(state.currency);
-            setActiveLocale(state.locale);
           }
         };
       },

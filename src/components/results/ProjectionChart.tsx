@@ -15,6 +15,7 @@ import type { FireResult } from '@/types';
 import { useT } from '@/lib/i18n';
 import { TrendingUp } from 'lucide-react';
 import { useFireStore } from '@/store/fireStore';
+import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/utils';
 
 interface ProjectionChartProps {
@@ -23,7 +24,8 @@ interface ProjectionChartProps {
 
 export function ProjectionChart({ result }: ProjectionChartProps) {
   const t = useT();
-  const { showRealValues, toggleRealValues, inputs } = useFireStore();
+  const { inputs } = useFireStore();
+  const { showRealValues, toggleRealValues } = useUIStore();
   const inflation = inputs.expenses.annualInflationRate / 100;
   const isBridgeStrategy = result.bridgeGap > 0;
 
