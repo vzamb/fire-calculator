@@ -6,6 +6,7 @@ import { useFireStore } from '@/store/fireStore';
 import { useUIStore } from '@/store/uiStore';
 import { I18nContext, getTranslations } from '@/lib/i18n';
 import { extractSharedInputs } from '@/lib/sharing';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function App() {
   const { setInputs } = useFireStore();
@@ -47,6 +48,7 @@ function App() {
           </div>
         </div>
       </main>
+      <SpeedInsights />
     </div>
     </I18nContext.Provider>
   );
