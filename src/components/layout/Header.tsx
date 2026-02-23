@@ -73,14 +73,16 @@ export function Header() {
             <span className="hidden sm:inline">GitHub</span>
           </a>
 
-          {/* Buy Me a Coffee — branded yellow button */}
+          {/* Buy Me a Coffee — text button on desktop, icon-only on mobile */}
           <a
             href={BMC_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-semibold bg-[#FFDD00] text-[#0d0d0d] hover:bg-[#f0cf00] transition-colors shrink-0"
+            aria-label="Buy me a coffee"
+            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-secondary/50 transition-colors shrink-0"
           >
-            ☕ Buy me a coffee
+            <span>☕</span>
+            <span className="hidden sm:inline">Buy me a coffee</span>
           </a>
 
           {/* Settings dropdown */}
@@ -161,19 +163,6 @@ export function Header() {
                   <RotateCcw className="w-4 h-4 text-muted-foreground" />
                   {t.reset}
                 </button>
-
-                <div className="border-t border-border my-1 sm:hidden" />
-
-                {/* Buy Me a Coffee — shown in menu on mobile only */}
-                <a
-                  href={BMC_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="sm:hidden w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-foreground hover:bg-secondary/50 transition-colors"
-                  onClick={() => setSettingsOpen(false)}
-                >
-                  <span>☕</span> Buy me a coffee
-                </a>
               </div>
             )}
           </div>
