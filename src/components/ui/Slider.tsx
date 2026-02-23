@@ -1,5 +1,7 @@
 import { cn } from '@/lib/utils';
 
+import { Tooltip } from '@/components/ui/Tooltip';
+
 interface SliderProps {
   min: number;
   max: number;
@@ -7,6 +9,7 @@ interface SliderProps {
   value: number;
   onChange: (value: number) => void;
   label?: string;
+  tooltip?: string;
   suffix?: string;
   className?: string;
   formatValue?: (value: number) => string;
@@ -19,6 +22,7 @@ export function Slider({
   value,
   onChange,
   label,
+  tooltip,
   suffix = '',
   className,
   formatValue,
@@ -29,9 +33,12 @@ export function Slider({
     <div className={cn('space-y-2', className)}>
       {label && (
         <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-foreground">
-            {label}
-          </label>
+          <div className="flex items-center gap-1.5">
+            <label className="text-sm font-medium text-foreground">
+              {label}
+            </label>
+            {tooltip && <Tooltip content={tooltip} />}
+          </div>
           <span className="text-sm font-semibold text-primary tabular-nums">
             {formatValue ? formatValue(value) : `${value}${suffix}`}
           </span>

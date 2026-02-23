@@ -79,8 +79,15 @@ export function calculateFire(inputs: FireInputs): FireResult {
   const maxYears = personalInfo.lifeExpectancy - personalInfo.currentAge + 1;
   const yearlyProjections: YearlyProjection[] = [];
 
-  let portfolio = assets.investedAssets + assets.cashSavings + assets.otherAssets;
+  let mainPortfolio = assets.investedAssets + assets.cashSavings + assets.otherAssets;
+  const customAssetsBalances = assets.customAssets.map(a => a.balance);
+  const customAssetsRates = assets.customAssets.map(a => Math.max(0, a.expectedAnnualReturn) / 100);
+  const customAssetsContribs = assets.customAssets.map(a => (a.monthlyContribution + (a.employerMatch || 0)) * 12);
+
+  let portfolio = mainPortfolio + customAssetsBalances.reduce((sum, b) => sum + b, 0);
   let costBasis = portfolio; // Assume initial portfolio is all cost basis
+
+  // Track opt/pess globally for simplicity
   let portfolioOpt = portfolio;
   let portfolioPess = portfolio;
   let cumulativeContributions = portfolio;
@@ -151,12 +158,29 @@ export function calculateFire(inputs: FireInputs): FireResult {
 
     if (!isRetired) {
       // ══ ACCUMULATION PHASE ══
-      const annualContribution = currentMonthlyInvestment * 12;
-      const growth = portfolio * netReturn;
+      const mainContrib = currentMonthlyInvestment * 12;
+      let totalCustomContrib = 0;
+      let totalCustomGrowth = 0;
+
+      for (let c = 0; c < customAssetsBalances.length; c++) {
+        const bal = customAssetsBalances[c]!;
+        const rate = customAssetsRates[c]!;
+        const cContrib = customAssetsContribs[c]!;
+        const g = bal * rate;
+        customAssetsBalances[c] = bal + g + cContrib;
+        totalCustomGrowth += g;
+        totalCustomContrib += cContrib;
+      }
+
+      const annualContribution = mainContrib + totalCustomContrib;
+      const mainGrowth = mainPortfolio * netReturn;
+      const totalGrowth = mainGrowth + totalCustomGrowth;
+
+      mainPortfolio += mainGrowth + mainContrib + netOneTime;
+      portfolio = mainPortfolio + customAssetsBalances.reduce((a, b) => a + b, 0);
       const growthOpt = portfolioOpt * (netReturn + 0.02);
       const growthPess = portfolioPess * Math.max(0, netReturn - 0.02);
 
-      portfolio += growth + annualContribution + netOneTime;
       portfolioOpt += growthOpt + annualContribution + netOneTime;
       portfolioPess += growthPess + annualContribution + netOneTime;
 
@@ -171,7 +195,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
       }
 
       cumulativeContributions += annualContribution;
-      cumulativeGrowth += growth;
+      cumulativeGrowth += totalGrowth;
 
       // Passive income = what portfolio could generate via SWR
       const passiveIncome = portfolio * swr;
@@ -183,7 +207,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
         portfolioOptimistic: Math.max(0, portfolioOpt),
         portfolioPessimistic: Math.max(0, portfolioPess),
         annualContributions: annualContribution,
-        annualInvestmentGrowth: growth,
+        annualInvestmentGrowth: totalGrowth,
         annualExpenses: livingExpenses + Math.max(0, -netOneTime),
         annualDebtPayments,
         passiveIncome,
@@ -283,14 +307,21 @@ export function calculateFire(inputs: FireInputs): FireResult {
       }
     } else {
       // ══ DRAWDOWN PHASE ══
+      // Merge custom assets into main portfolio upon retirement
+      if (customAssetsBalances.some(b => b > 0)) {
+        mainPortfolio += customAssetsBalances.reduce((a, b) => a + b, 0);
+        customAssetsBalances.fill(0);
+      }
+      portfolio = mainPortfolio;
+
       // retirementExpenses was set at retirement from actual inflated living
       // expenses, and continues to grow with inflation each iteration.
       const totalRetirementSpend = retirementExpenses + annualDebtPayments;
       const netWithdrawal = Math.max(0, totalRetirementSpend - pensionIncome - recurringIncome);
-      
+
       const growth = portfolio * netReturn;
       const portfolioBeforeWithdrawal = portfolio + growth;
-      
+
       let grossWithdrawal = netWithdrawal;
       if (netWithdrawal > 0 && portfolioBeforeWithdrawal > costBasis) {
         const gainsPortion = (portfolioBeforeWithdrawal - costBasis) / portfolioBeforeWithdrawal;
@@ -300,7 +331,9 @@ export function calculateFire(inputs: FireInputs): FireResult {
       const growthOpt = portfolioOpt * (netReturn + 0.02);
       const growthPess = portfolioPess * Math.max(0, netReturn - 0.02);
 
-      portfolio += growth - grossWithdrawal + netOneTime;
+      mainPortfolio += growth - grossWithdrawal + netOneTime;
+      portfolio = mainPortfolio;
+
       portfolioOpt += growthOpt - grossWithdrawal + netOneTime;
       portfolioPess += growthPess - grossWithdrawal + netOneTime;
       cumulativeGrowth += growth;

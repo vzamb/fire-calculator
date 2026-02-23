@@ -96,7 +96,13 @@ export function runMonteCarlo(
   const initialMonthlyInvestment = fireGoals.monthlyInvestment;
 
   const maxYears = personalInfo.lifeExpectancy - personalInfo.currentAge + 1;
-  const startPortfolio = assets.investedAssets + assets.cashSavings + assets.otherAssets;
+  const mainPortfolioStart = assets.investedAssets + assets.cashSavings + assets.otherAssets;
+
+  const customAssetsBalancesStart = assets.customAssets.map(a => a.balance);
+  const customAssetsRates = assets.customAssets.map(a => Math.max(0, a.expectedAnnualReturn) / 100);
+  const customAssetsContribs = assets.customAssets.map(a => (a.monthlyContribution + (a.employerMatch || 0)) * 12);
+
+  const startPortfolio = mainPortfolioStart + customAssetsBalancesStart.reduce((sum, b) => sum + b, 0);
 
   // Build pension entries once
   const pensionEntries: PensionEntry[] = income.pensions
@@ -135,6 +141,9 @@ export function runMonteCarlo(
 
   for (let sim = 0; sim < numSimulations; sim++) {
     const path: number[] = [];
+    let mainPortfolio = mainPortfolioStart;
+    const customAssetsBalances = [...customAssetsBalancesStart];
+
     let portfolio = startPortfolio;
     let costBasis = startPortfolio;
     let livingExpenses = baseAnnualExpenses;
@@ -191,10 +200,30 @@ export function runMonteCarlo(
 
       if (!isRetired) {
         // Accumulation
-        const annualContribution = currentMonthlyInvestment * 12;
-        const growth = portfolio * randomReturn;
-        portfolio += growth + annualContribution + netOneTime;
-        portfolio = Math.max(0, portfolio);
+        const mainContrib = currentMonthlyInvestment * 12;
+        let totalCustomContrib = 0;
+        let totalCustomGrowth = 0;
+
+        for (let c = 0; c < customAssetsBalances.length; c++) {
+          const bal = customAssetsBalances[c]!;
+          const rate = customAssetsRates[c]!;
+          const cContrib = customAssetsContribs[c]!;
+          // We can optionally add randomized returns here, but for simplicity
+          // custom assets typically represent stable/specific curves. 
+          // Applying the randomReturn to global market investments.
+          const g = bal * rate;
+          customAssetsBalances[c] = bal + g + cContrib;
+          totalCustomGrowth += g;
+          totalCustomContrib += cContrib;
+        }
+
+        const annualContribution = mainContrib + totalCustomContrib;
+        const mainGrowth = mainPortfolio * randomReturn;
+
+        mainPortfolio += mainGrowth + mainContrib + netOneTime;
+        mainPortfolio = Math.max(0, mainPortfolio);
+
+        portfolio = mainPortfolio + customAssetsBalances.reduce((a, b) => a + b, 0);
 
         if (netOneTime > 0) {
           costBasis += annualContribution + netOneTime;
@@ -290,21 +319,28 @@ export function runMonteCarlo(
         }
       } else {
         // Drawdown
+        if (customAssetsBalances.some(b => b > 0)) {
+          mainPortfolio += customAssetsBalances.reduce((a, b) => a + b, 0);
+          customAssetsBalances.fill(0);
+        }
+        portfolio = mainPortfolio;
+
         const totalSpend = retirementExpenses + annualDebtPayments;
         const netWithdrawal = Math.max(0, totalSpend - pensionIncome - recurringIncome);
-        
+
         const growth = portfolio * randomReturn;
         const portfolioBeforeWithdrawal = portfolio + growth;
-        
+
         let grossWithdrawal = netWithdrawal;
         if (netWithdrawal > 0 && portfolioBeforeWithdrawal > costBasis) {
           const gainsPortion = (portfolioBeforeWithdrawal - costBasis) / portfolioBeforeWithdrawal;
           grossWithdrawal = netWithdrawal / (1 - gainsPortion * capitalGainsTax);
         }
 
-        portfolio += growth - grossWithdrawal + netOneTime;
-        portfolio = Math.max(0, portfolio);
-        
+        mainPortfolio += growth - grossWithdrawal + netOneTime;
+        mainPortfolio = Math.max(0, mainPortfolio);
+        portfolio = mainPortfolio;
+
         if (grossWithdrawal > 0 && portfolioBeforeWithdrawal > 0) {
           costBasis -= grossWithdrawal * (costBasis / portfolioBeforeWithdrawal);
         }
@@ -316,16 +352,19 @@ export function runMonteCarlo(
             costBasis -= oneTimeWithdrawal * (costBasis / portfolio);
           }
         }
-        
+
         retirementExpenses *= 1 + inflation;
       }
 
       if (!isRetired) {
         livingExpenses *= 1 + inflation;
         currentMonthlyInvestment *= 1 + income.annualSalaryGrowth / 100;
-      }
 
-      path.push(portfolio);
+        // Ensure path captures the value BEFORE we jump to drawdown next loop
+        path.push(portfolio);
+      } else {
+        path.push(portfolio);
+      }
     }
 
     allPaths.push(path);

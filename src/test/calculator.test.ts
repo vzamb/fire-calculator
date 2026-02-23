@@ -46,6 +46,7 @@ function makeInputs(overrides: Partial<{
       investedAssets: overrides.investedAssets ?? 50000,
       cashSavings: overrides.cashSavings ?? 10000,
       otherAssets: overrides.otherAssets ?? 0,
+      customAssets: [],
       debts: [],
       emergencyFundMonths: 6,
       realEstateAssets: [],

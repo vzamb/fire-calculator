@@ -311,6 +311,7 @@ export function InputPanel() {
         <div className="pt-2">
           <Slider
             label={t.monthlyInvestment}
+            tooltip={t.monthlyInvestmentHint}
             min={0}
             max={Math.max(availableToInvest, fireGoals.monthlyInvestment, 100)}
             step={50}
@@ -641,26 +642,124 @@ function AssetsSection() {
       title={t.assetsDebts}
       summary={`${t.net}: ${formatCurrency(totalAssets - totalDebt)}`}
     >
-      <div className="grid grid-cols-2 gap-4">
-        <CurrencyInput
-          label={t.investedAssets}
-          tooltip={t.investedAssetsTooltip}
-          value={assets.investedAssets}
-          onChange={(v) => updateAssets({ investedAssets: v })}
-        />
-        <CurrencyInput
-          label={t.cashSavings}
-          tooltip={t.cashSavingsTooltip}
-          value={assets.cashSavings}
-          onChange={(v) => updateAssets({ cashSavings: v })}
-        />
+      {/* ── Custom Assets ── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-xs font-medium text-primary">{t.customAssets}</h4>
+          <Button variant="outline" size="sm" onClick={() => {
+            const newAsset: import('@/types').CustomAsset = {
+              id: crypto.randomUUID(),
+              type: 'other',
+              name: '',
+              balance: 0,
+              monthlyContribution: 0,
+              expectedAnnualReturn: 7.0,
+            };
+            updateAssets({ customAssets: [...assets.customAssets, newAsset] });
+          }} className="h-7 text-xs">
+            <Plus className="w-3 h-3 mr-1" /> {t.addAsset}
+          </Button>
+        </div>
+
+        {assets.customAssets.map((asset, i) => (
+          <div key={asset.id} className="border border-border rounded-lg p-3 space-y-3 animate-slide-up bg-secondary/10">
+            <div className="flex items-center justify-between gap-2">
+              <Input
+                type="text"
+                value={asset.name}
+                onChange={(e) => updateAssets({
+                  customAssets: assets.customAssets.map(a => a.id === asset.id ? { ...a, name: e.target.value } : a),
+                })}
+                placeholder={`${t.assetName} ${i + 1}`}
+                className="border-0 bg-transparent p-0 h-auto text-sm font-medium focus-visible:ring-0 flex-1 min-w-0"
+              />
+              <select
+                value={asset.type}
+                onChange={(e) => updateAssets({
+                  customAssets: assets.customAssets.map(a => a.id === asset.id ? { ...a, type: e.target.value as any } : a),
+                })}
+                className="h-7 w-28 shrink-0 rounded-md border border-border bg-background px-1 text-[10px] font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+              >
+                <option value="tradIra">401(k) / Trad IRA</option>
+                <option value="rothIra">Roth IRA</option>
+                <option value="brokerage">Brokerage</option>
+                <option value="hysa">HYSA</option>
+                <option value="other">Other</option>
+              </select>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => updateAssets({ customAssets: assets.customAssets.filter(a => a.id !== asset.id) })}
+                className="text-destructive hover:text-destructive h-7 w-7 shrink-0"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <CurrencyInput
+                label={t.assetBalance}
+                value={asset.balance}
+                onChange={(v) => updateAssets({
+                  customAssets: assets.customAssets.map(a => a.id === asset.id ? { ...a, balance: v } : a),
+                })}
+              />
+              <CurrencyInput
+                label={t.assetContrib}
+                value={asset.monthlyContribution}
+                onChange={(v) => updateAssets({
+                  customAssets: assets.customAssets.map(a => a.id === asset.id ? { ...a, monthlyContribution: v } : a),
+                })}
+              />
+              <PercentInput
+                label={t.customAssetReturn}
+                value={asset.expectedAnnualReturn}
+                onChange={(v) => updateAssets({
+                  customAssets: assets.customAssets.map(a => a.id === asset.id ? { ...a, expectedAnnualReturn: v } : a),
+                })}
+                step={1}
+                min={0}
+                max={30}
+              />
+              {(asset.type === 'tradIra' || asset.type === 'rothIra') && (
+                <CurrencyInput
+                  label={t.employerMatch}
+                  value={asset.employerMatch || 0}
+                  onChange={(v) => updateAssets({
+                    customAssets: assets.customAssets.map(a => a.id === asset.id ? { ...a, employerMatch: v } : a),
+                  })}
+                />
+              )}
+            </div>
+          </div>
+        ))}
       </div>
-      <CurrencyInput
-        label={t.otherAssets}
-        tooltip={t.otherAssetsTooltip}
-        value={assets.otherAssets}
-        onChange={(v) => updateAssets({ otherAssets: v })}
-      />
+
+      <div className="pt-3 border-t border-border">
+        <h4 className="text-xs font-semibold text-muted-foreground mb-3">{t.otherAssets}</h4>
+        <div className="grid grid-cols-2 gap-4">
+          <CurrencyInput
+            label={t.investedAssets}
+            tooltip={t.investedAssetsTooltip}
+            value={assets.investedAssets}
+            onChange={(v) => updateAssets({ investedAssets: v })}
+          />
+          <CurrencyInput
+            label={t.cashSavings}
+            tooltip={t.cashSavingsTooltip}
+            value={assets.cashSavings}
+            onChange={(v) => updateAssets({ cashSavings: v })}
+          />
+        </div>
+        <div className="mt-3">
+          <CurrencyInput
+            label={t.otherAssets}
+            tooltip={t.otherAssetsTooltip}
+            value={assets.otherAssets}
+            onChange={(v) => updateAssets({ otherAssets: v })}
+          />
+        </div>
+      </div>
 
       {/* Debts */}
       <div className="pt-3 border-t border-border">

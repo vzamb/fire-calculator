@@ -27,10 +27,24 @@ export interface ExpensesInfo {
 }
 
 // ─── Assets ───
+export type AssetType = 'tradIra' | 'rothIra' | 'brokerage' | 'hysa' | 'other';
+
+export interface CustomAsset {
+  id: string;
+  type: AssetType;
+  name: string;
+  balance: number;
+  monthlyContribution: number;
+  expectedAnnualReturn: number;
+  employerMatch?: number; // mostly relevant for 401(k)/TradIRA
+}
+
 export interface AssetsInfo {
   investedAssets: number;
   cashSavings: number;
   otherAssets: number;
+  customAssets: CustomAsset[];
+  // Debts and Real Estate
   debts: Debt[];
   emergencyFundMonths: number;
   realEstateAssets: RealEstateAsset[];
