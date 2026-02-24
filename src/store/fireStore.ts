@@ -166,6 +166,14 @@ export const useFireStore = create<FireStore>()(
               state.inputs.assets.customAssets = [];
             }
             const oldAssets = state.inputs.assets as unknown as Record<string, unknown>;
+
+            // Migrate legacy otherAssets bucket into investedAssets (field removed)
+            const legacyOtherAssets = (oldAssets.otherAssets as number) ?? 0;
+            if (legacyOtherAssets > 0) {
+              state.inputs.assets.investedAssets = (state.inputs.assets.investedAssets ?? 0) + legacyOtherAssets;
+            }
+            delete oldAssets.otherAssets;
+
             const pushAsset = (type: string, name: string, balance: number, contrib: number, ret: number, match?: number) => {
               if (balance > 0 || contrib > 0 || (match && match > 0)) {
                 state.inputs.assets.customAssets.push({

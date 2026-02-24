@@ -42,7 +42,6 @@ export interface CustomAsset {
 export interface AssetsInfo {
   investedAssets: number;
   cashSavings: number;
-  otherAssets: number;
   customAssets: CustomAsset[];
   // Debts and Real Estate
   debts: Debt[];

@@ -75,4 +75,20 @@ describe('runMonteCarlo', () => {
     expect(result.ages[0]).toBe(DEFAULT_INPUTS.personalInfo.currentAge);
     expect(result.ages[result.ages.length - 1]).toBe(DEFAULT_INPUTS.personalInfo.lifeExpectancy);
   });
+
+  it('custom assets improve Monte Carlo median FIRE age', () => {
+    const base = runMonteCarlo(DEFAULT_INPUTS, 200);
+    const withCustom: FireInputs = {
+      ...DEFAULT_INPUTS,
+      assets: {
+        ...DEFAULT_INPUTS.assets,
+        customAssets: [
+          { id: '1', type: 'brokerage', name: 'Brokerage', balance: 50000, monthlyContribution: 500, expectedAnnualReturn: 7 },
+        ],
+      },
+    };
+    const enhanced = runMonteCarlo(withCustom, 200);
+    // More assets + contributions → reach FIRE sooner
+    expect(enhanced.medianFireAge).toBeLessThanOrEqual(base.medianFireAge);
+  });
 });

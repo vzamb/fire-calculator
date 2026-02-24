@@ -58,6 +58,12 @@ export interface Translations {
   addAsset: string;
   assetName: string;
   assetType: string;
+  assetTypeTradIra: string;
+  assetTypeRothIra: string;
+  assetTypeBrokerage: string;
+  assetTypeHysa: string;
+  assetTypeOther: string;
+  noCustomAssets: string;
   assetBalance: string;
   assetContrib: string;
   customAssetReturn: string;

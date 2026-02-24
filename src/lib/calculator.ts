@@ -68,18 +68,20 @@ export function calculateFire(inputs: FireInputs): FireResult {
   const recurringIncomeEntries = toRecurringIncomeEntries(inputs);
 
   const totalMonthlyIncome = income.monthlyNetSalary + income.additionalMonthlyIncome;
+  const customMonthlyUserContrib = assets.customAssets.reduce((sum, asset) => sum + asset.monthlyContribution, 0);
   let currentMonthlyInvestment = fireGoals.monthlyInvestment;
+  const totalMonthlySavings = currentMonthlyInvestment + customMonthlyUserContrib;
 
   const currentSavingsRate =
     totalMonthlyIncome > 0
-      ? (currentMonthlyInvestment / totalMonthlyIncome) * 100
+      ? (totalMonthlySavings / totalMonthlyIncome) * 100
       : 0;
 
   // ─── Year-by-year projection ───
   const maxYears = personalInfo.lifeExpectancy - personalInfo.currentAge + 1;
   const yearlyProjections: YearlyProjection[] = [];
 
-  let mainPortfolio = assets.investedAssets + assets.cashSavings + assets.otherAssets;
+  let mainPortfolio = assets.investedAssets + assets.cashSavings;
   const customAssetsBalances = assets.customAssets.map(a => a.balance);
   const customAssetsRates = assets.customAssets.map(a => Math.max(0, a.expectedAnnualReturn) / 100);
   const customAssetsContribs = assets.customAssets.map(a => (a.monthlyContribution + (a.employerMatch || 0)) * 12);
@@ -471,7 +473,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
     fireDate,
     yearsToFire,
     currentSavingsRate,
-    monthlySavings: fireGoals.monthlyInvestment,
+    monthlySavings: totalMonthlySavings,
     coastFireAge,
     baristaFireIncome,
     yearlyProjections,

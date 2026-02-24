@@ -21,9 +21,8 @@ export const DEFAULT_EXPENSES: ExpensesInfo = {
 };
 
 export const DEFAULT_ASSETS: AssetsInfo = {
-  investedAssets: 50000,
+  investedAssets: 20000,
   cashSavings: 10000,
-  otherAssets: 0,
   customAssets: [],
   debts: [],
   emergencyFundMonths: 6,

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Plus, Trash2 } from 'lucide-react';
 import { RISK_PROFILES, FIRE_TYPES, ASSET_CLASSES, computePortfolioStats, geometricReturn, DEFAULT_ASSET_RETURNS } from '@/lib/constants';
-import type { RiskProfile, FireType, AssetClassKey, AssetReturns, Debt, FutureExpense, FutureIncome, Pension, RecurringIncome, RealEstateAsset } from '@/types';
+import type { RiskProfile, FireType, AssetClassKey, AssetReturns, AssetType, Debt, FutureExpense, FutureIncome, Pension, RecurringIncome, RealEstateAsset } from '@/types';
 import { formatCurrency } from '@/lib/formatters';
 import { useT, tKey } from '@/lib/i18n';
 import { ProfileManager } from './ProfileManager';
@@ -263,8 +263,10 @@ export function InputPanel() {
 
   const { personalInfo, income, expenses, assets, investmentStrategy, fireGoals } = inputs;
   const totalMonthlyIncome = income.monthlyNetSalary + income.additionalMonthlyIncome;
+  const customMonthlyContributions = assets.customAssets.reduce((sum, asset) => sum + asset.monthlyContribution, 0);
+  const totalMonthlyInvesting = fireGoals.monthlyInvestment + customMonthlyContributions;
   const totalDebtPayments = assets.debts.reduce((s, d) => s + d.monthlyPayment, 0);
-  const availableToInvest = Math.max(0, totalMonthlyIncome - expenses.monthlyExpenses - totalDebtPayments);
+  const availableToInvest = Math.max(0, totalMonthlyIncome - expenses.monthlyExpenses - totalDebtPayments - customMonthlyContributions);
 
   return (
     <div className="space-y-3">
@@ -293,17 +295,17 @@ export function InputPanel() {
           )}
           <span className="text-muted-foreground">{t.investing}</span>
           <span className="text-right font-medium text-primary">
-            −{formatCurrency(fireGoals.monthlyInvestment)}
+            −{formatCurrency(totalMonthlyInvesting)}
           </span>
           <div className="col-span-2 border-t border-border my-1" />
           <span className="text-muted-foreground font-medium">{t.remaining}</span>
           <span className={cn(
             'text-right font-bold',
-            (totalMonthlyIncome - expenses.monthlyExpenses - totalDebtPayments - fireGoals.monthlyInvestment) >= 0
+            (totalMonthlyIncome - expenses.monthlyExpenses - totalDebtPayments - totalMonthlyInvesting) >= 0
               ? 'text-emerald-500'
               : 'text-destructive'
           )}>
-            {formatCurrency(totalMonthlyIncome - expenses.monthlyExpenses - totalDebtPayments - fireGoals.monthlyInvestment)}
+            {formatCurrency(totalMonthlyIncome - expenses.monthlyExpenses - totalDebtPayments - totalMonthlyInvesting)}
           </span>
         </div>
 
@@ -630,7 +632,9 @@ function AssetsSection() {
     updateAssets({ debts: assets.debts.filter((d) => d.id !== id) });
   };
 
-  const totalAssets = assets.investedAssets + assets.cashSavings + assets.otherAssets
+  const totalCustomAssetBalances = assets.customAssets.reduce((sum, asset) => sum + asset.balance, 0);
+  const totalAssets = assets.investedAssets + assets.cashSavings
+    + totalCustomAssetBalances
     + (assets.realEstateAssets ?? []).reduce((s, r) => s + r.propertyValue, 0);
   const totalDebt = assets.debts.reduce((s, d) => s + d.monthlyPayment * d.remainingYears * 12, 0);
 
@@ -642,10 +646,27 @@ function AssetsSection() {
       title={t.assetsDebts}
       summary={`${t.net}: ${formatCurrency(totalAssets - totalDebt)}`}
     >
+      <div className="pt-3 border-t border-border">
+        <div className="grid grid-cols-2 gap-4">
+          <CurrencyInput
+            label={t.investedAssets}
+            tooltip={t.investedAssetsTooltip}
+            value={assets.investedAssets}
+            onChange={(v) => updateAssets({ investedAssets: v })}
+          />
+          <CurrencyInput
+            label={t.cashSavings}
+            tooltip={t.cashSavingsTooltip}
+            value={assets.cashSavings}
+            onChange={(v) => updateAssets({ cashSavings: v })}
+          />
+        </div>
+      </div>
+
       {/* ── Custom Assets ── */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-xs font-medium text-primary">{t.customAssets}</h4>
+      <div className="pt-3 border-t border-border space-y-3">
+        <div className="flex items-center justify-between mb-1">
+          <h4 className="text-xs font-medium text-muted-foreground">{t.customAssets}</h4>
           <Button variant="outline" size="sm" onClick={() => {
             const newAsset: import('@/types').CustomAsset = {
               id: crypto.randomUUID(),
@@ -657,12 +678,16 @@ function AssetsSection() {
             };
             updateAssets({ customAssets: [...assets.customAssets, newAsset] });
           }} className="h-7 text-xs">
-            <Plus className="w-3 h-3 mr-1" /> {t.addAsset}
+            <Plus className="w-3 h-3 mr-1" /> {t.add}
           </Button>
         </div>
 
+        {assets.customAssets.length === 0 && (
+          <p className="text-xs text-muted-foreground/60 text-center py-2">{t.noCustomAssets}</p>
+        )}
+
         {assets.customAssets.map((asset, i) => (
-          <div key={asset.id} className="border border-border rounded-lg p-3 space-y-3 animate-slide-up bg-secondary/10">
+          <div key={asset.id} className="border border-border rounded-lg p-3 space-y-3 animate-slide-up">
             <div className="flex items-center justify-between gap-2">
               <Input
                 type="text"
@@ -676,15 +701,16 @@ function AssetsSection() {
               <select
                 value={asset.type}
                 onChange={(e) => updateAssets({
-                  customAssets: assets.customAssets.map(a => a.id === asset.id ? { ...a, type: e.target.value as any } : a),
+                  customAssets: assets.customAssets.map(a => a.id === asset.id ? { ...a, type: e.target.value as AssetType } : a),
                 })}
-                className="h-7 w-28 shrink-0 rounded-md border border-border bg-background px-1 text-[10px] font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                className="h-8 w-36 shrink-0 rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                aria-label={t.assetType}
               >
-                <option value="tradIra">401(k) / Trad IRA</option>
-                <option value="rothIra">Roth IRA</option>
-                <option value="brokerage">Brokerage</option>
-                <option value="hysa">HYSA</option>
-                <option value="other">Other</option>
+                <option value="tradIra">{t.assetTypeTradIra}</option>
+                <option value="rothIra">{t.assetTypeRothIra}</option>
+                <option value="brokerage">{t.assetTypeBrokerage}</option>
+                <option value="hysa">{t.assetTypeHysa}</option>
+                <option value="other">{t.assetTypeOther}</option>
               </select>
               <Button
                 variant="ghost"
@@ -721,7 +747,7 @@ function AssetsSection() {
                 min={0}
                 max={30}
               />
-              {(asset.type === 'tradIra' || asset.type === 'rothIra') && (
+              {asset.type === 'tradIra' && (
                 <CurrencyInput
                   label={t.employerMatch}
                   value={asset.employerMatch || 0}
@@ -733,32 +759,6 @@ function AssetsSection() {
             </div>
           </div>
         ))}
-      </div>
-
-      <div className="pt-3 border-t border-border">
-        <h4 className="text-xs font-semibold text-muted-foreground mb-3">{t.otherAssets}</h4>
-        <div className="grid grid-cols-2 gap-4">
-          <CurrencyInput
-            label={t.investedAssets}
-            tooltip={t.investedAssetsTooltip}
-            value={assets.investedAssets}
-            onChange={(v) => updateAssets({ investedAssets: v })}
-          />
-          <CurrencyInput
-            label={t.cashSavings}
-            tooltip={t.cashSavingsTooltip}
-            value={assets.cashSavings}
-            onChange={(v) => updateAssets({ cashSavings: v })}
-          />
-        </div>
-        <div className="mt-3">
-          <CurrencyInput
-            label={t.otherAssets}
-            tooltip={t.otherAssetsTooltip}
-            value={assets.otherAssets}
-            onChange={(v) => updateAssets({ otherAssets: v })}
-          />
-        </div>
       </div>
 
       {/* Debts */}

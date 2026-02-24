@@ -11,7 +11,6 @@ function makeInputs(overrides: Partial<{
   expenses: number;
   investedAssets: number;
   cashSavings: number;
-  otherAssets: number;
   monthlyInvestment: number;
   expectedReturn: number;
   annualFees: number;
@@ -45,7 +44,6 @@ function makeInputs(overrides: Partial<{
     assets: {
       investedAssets: overrides.investedAssets ?? 50000,
       cashSavings: overrides.cashSavings ?? 10000,
-      otherAssets: overrides.otherAssets ?? 0,
       customAssets: [],
       debts: [],
       emergencyFundMonths: 6,
@@ -107,10 +105,14 @@ describe('calculateFire', () => {
     expect(result.yearlyProjections[result.yearlyProjections.length - 1]!.age).toBe(85);
   });
 
-  it('includes otherAssets in starting portfolio', () => {
-    const without = calculateFire(makeInputs({ otherAssets: 0 }));
-    const withOther = calculateFire(makeInputs({ otherAssets: 100000 }));
-    expect(withOther.fireAge).toBeLessThanOrEqual(without.fireAge);
+  it('includes custom asset balances in starting portfolio', () => {
+    const without = calculateFire(makeInputs({}));
+    const inputs = makeInputs({});
+    inputs.assets.customAssets = [
+      { id: 'extra', type: 'other', name: 'Extra', balance: 100000, monthlyContribution: 0, expectedAnnualReturn: 7 },
+    ];
+    const withCustom = calculateFire(inputs);
+    expect(withCustom.fireAge).toBeLessThanOrEqual(without.fireAge);
   });
 
   it('applies annual fees to reduce net return', () => {
@@ -166,5 +168,73 @@ describe('calculateFire', () => {
       cashSavings: 0,
     }));
     expect(result.fireAge).toBeLessThanOrEqual(90);
+  });
+
+  // ── Custom Assets Integration ──
+
+  it('custom asset balances are included in starting portfolio', () => {
+    const without = calculateFire(makeInputs({ investedAssets: 50000 }));
+    const inputs = makeInputs({ investedAssets: 50000 });
+    inputs.assets.customAssets = [
+      { id: '1', type: 'brokerage', name: 'Brokerage', balance: 30000, monthlyContribution: 0, expectedAnnualReturn: 7 },
+    ];
+    const withCustom = calculateFire(inputs);
+    // First-year portfolio should be higher by the custom asset balance
+    expect(withCustom.yearlyProjections[0]!.portfolioValue).toBeGreaterThan(
+      without.yearlyProjections[0]!.portfolioValue
+    );
+  });
+
+  it('custom asset contributions increase savings rate and monthly savings', () => {
+    const base = calculateFire(makeInputs({ salary: 5000, monthlyInvestment: 1000 }));
+    const inputs = makeInputs({ salary: 5000, monthlyInvestment: 1000 });
+    inputs.assets.customAssets = [
+      { id: '1', type: 'tradIra', name: '401k', balance: 0, monthlyContribution: 500, expectedAnnualReturn: 7, employerMatch: 250 },
+    ];
+    const withCustom = calculateFire(inputs);
+    // savings rate should include the 500/mo custom contribution
+    expect(withCustom.currentSavingsRate).toBeGreaterThan(base.currentSavingsRate);
+    // monthly savings should include custom contributions
+    expect(withCustom.monthlySavings).toBe(1500); // 1000 general + 500 custom
+  });
+
+  it('custom assets with contributions lead to earlier FIRE', () => {
+    const base = calculateFire(makeInputs({ monthlyInvestment: 500 }));
+    const inputs = makeInputs({ monthlyInvestment: 500 });
+    inputs.assets.customAssets = [
+      { id: '1', type: 'brokerage', name: 'Extra', balance: 0, monthlyContribution: 500, expectedAnnualReturn: 7 },
+    ];
+    const withCustom = calculateFire(inputs);
+    expect(withCustom.fireAge).toBeLessThanOrEqual(base.fireAge);
+  });
+
+  it('custom assets grow at their own rate, not the portfolio rate', () => {
+    const inputs = makeInputs({ expectedReturn: 7, investedAssets: 0, cashSavings: 0 });
+    inputs.assets.customAssets = [
+      { id: '1', type: 'hysa', name: 'HYSA', balance: 100000, monthlyContribution: 0, expectedAnnualReturn: 4 },
+    ];
+    const result = calculateFire(inputs);
+    // After year 1, the custom asset should grow at ~4%, not ~7%
+    // Total portfolio year 0 includes contributions+growth, but the HYSA-only portion
+    // should reflect its 4% rate. The portfolio should be less than 100000*1.07 = 107000
+    const yearOneValue = result.yearlyProjections[0]!.portfolioValue;
+    // With 4% return on 100k HYSA + general monthly investment (1000*12=12000 at ~6.28% geo)
+    expect(yearOneValue).toBeLessThan(100000 * 1.07 + 12000);
+    expect(yearOneValue).toBeGreaterThan(100000 * 1.03); // at least grew
+  });
+
+  it('employer match is included in custom asset annual contributions', () => {
+    const noMatch = makeInputs({ monthlyInvestment: 500 });
+    noMatch.assets.customAssets = [
+      { id: '1', type: 'tradIra', name: '401k', balance: 10000, monthlyContribution: 500, expectedAnnualReturn: 7 },
+    ];
+    const withMatch = makeInputs({ monthlyInvestment: 500 });
+    withMatch.assets.customAssets = [
+      { id: '1', type: 'tradIra', name: '401k', balance: 10000, monthlyContribution: 500, expectedAnnualReturn: 7, employerMatch: 250 },
+    ];
+    const resultNo = calculateFire(noMatch);
+    const resultWith = calculateFire(withMatch);
+    // Employer match of 250/mo = 3000/yr more, should reach FIRE faster
+    expect(resultWith.fireAge).toBeLessThanOrEqual(resultNo.fireAge);
   });
 });

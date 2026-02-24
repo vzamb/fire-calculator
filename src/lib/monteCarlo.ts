@@ -96,7 +96,7 @@ export function runMonteCarlo(
   const initialMonthlyInvestment = fireGoals.monthlyInvestment;
 
   const maxYears = personalInfo.lifeExpectancy - personalInfo.currentAge + 1;
-  const mainPortfolioStart = assets.investedAssets + assets.cashSavings + assets.otherAssets;
+  const mainPortfolioStart = assets.investedAssets + assets.cashSavings;
 
   const customAssetsBalancesStart = assets.customAssets.map(a => a.balance);
   const customAssetsRates = assets.customAssets.map(a => Math.max(0, a.expectedAnnualReturn) / 100);
