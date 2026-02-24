@@ -13,6 +13,7 @@ export interface Translations {
   investing: string;
   remaining: string;
   monthlyInvestment: string;
+  monthlyInvestmentHint: string;
   investingMoreThanBudget: string;
 
   // ─── About You ───
@@ -53,6 +54,20 @@ export interface Translations {
   cashSavingsTooltip: string;
   otherAssets: string;
   otherAssetsTooltip: string;
+  customAssets: string;
+  addAsset: string;
+  assetName: string;
+  assetType: string;
+  assetTypeTradIra: string;
+  assetTypeRothIra: string;
+  assetTypeBrokerage: string;
+  assetTypeHysa: string;
+  assetTypeOther: string;
+  noCustomAssets: string;
+  assetBalance: string;
+  assetContrib: string;
+  customAssetReturn: string;
+  employerMatch: string;
   debtsLoans: string;
   add: string;
   noDebts: string;

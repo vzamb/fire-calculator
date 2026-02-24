@@ -179,6 +179,48 @@ export const useFireStore = create<FireStore>()(
               state.inputs.fireGoals.recurringIncomes = DEFAULT_INPUTS.fireGoals.recurringIncomes;
             }
 
+            // Migrate legacy singular fields to dynamic customAssets
+            if (!Array.isArray(state.inputs.assets.customAssets)) {
+              state.inputs.assets.customAssets = [];
+            }
+            const oldAssets = state.inputs.assets as unknown as Record<string, unknown>;
+
+            // Migrate legacy otherAssets bucket into investedAssets (field removed)
+            const legacyOtherAssets = (oldAssets.otherAssets as number) ?? 0;
+            if (legacyOtherAssets > 0) {
+              state.inputs.assets.investedAssets = (state.inputs.assets.investedAssets ?? 0) + legacyOtherAssets;
+            }
+            delete oldAssets.otherAssets;
+
+            const pushAsset = (type: string, name: string, balance: number, contrib: number, ret: number, match?: number) => {
+              if (balance > 0 || contrib > 0 || (match && match > 0)) {
+                state.inputs.assets.customAssets.push({
+                  id: crypto.randomUUID(),
+                  type: type as any,
+                  name,
+                  balance,
+                  monthlyContribution: contrib,
+                  expectedAnnualReturn: ret,
+                  employerMatch: match
+                });
+              }
+            };
+
+            pushAsset('tradIra', '401(k) / Trad IRA', (oldAssets.tradIraAmount as number) ?? 0, (oldAssets.tradIraMonthlyContribution as number) ?? 0, 7.0, (oldAssets.employerMatch as number) ?? 0);
+            pushAsset('rothIra', 'Roth IRA', (oldAssets.rothIraAmount as number) ?? 0, (oldAssets.rothIraMonthlyContribution as number) ?? 0, 7.0);
+            pushAsset('brokerage', 'Brokerage', (oldAssets.brokerageAmount as number) ?? 0, (oldAssets.brokerageMonthlyContribution as number) ?? 0, 7.0);
+            pushAsset('hysa', 'High-Yield Savings', (oldAssets.hysaAmount as number) ?? 0, 0, (oldAssets.hysaInterestRate as number) ?? 4.0);
+
+            delete oldAssets.tradIraAmount;
+            delete oldAssets.tradIraMonthlyContribution;
+            delete oldAssets.employerMatch;
+            delete oldAssets.rothIraAmount;
+            delete oldAssets.rothIraMonthlyContribution;
+            delete oldAssets.brokerageAmount;
+            delete oldAssets.brokerageMonthlyContribution;
+            delete oldAssets.hysaAmount;
+            delete oldAssets.hysaInterestRate;
+
             // Ensure realEstateAssets array exists
             if (!Array.isArray(state.inputs.assets.realEstateAssets)) {
               state.inputs.assets.realEstateAssets = [];

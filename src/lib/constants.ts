@@ -23,7 +23,7 @@ export const DEFAULT_EXPENSES: ExpensesInfo = {
 export const DEFAULT_ASSETS: AssetsInfo = {
   investedAssets: 20000,
   cashSavings: 10000,
-  otherAssets: 0,
+  customAssets: [],
   debts: [],
   emergencyFundMonths: 6,
   realEstateAssets: [],
@@ -39,9 +39,9 @@ export interface AssetClassInfo {
 }
 
 export const ASSET_CLASSES: Record<AssetClassKey, AssetClassInfo> = {
-  equity: { labelKey: 'equity', defaultReturn: 8.0,  volatility: 16.0, emoji: '📈' },
-  bonds:  { labelKey: 'bonds',  defaultReturn: 2.5,  volatility: 4.5,  emoji: '🏦' },
-  cash:   { labelKey: 'cash',   defaultReturn: 1.5,  volatility: 1.0,  emoji: '💵' },
+  equity: { labelKey: 'equity', defaultReturn: 8.0, volatility: 16.0, emoji: '📈' },
+  bonds: { labelKey: 'bonds', defaultReturn: 2.5, volatility: 4.5, emoji: '🏦' },
+  cash: { labelKey: 'cash', defaultReturn: 1.5, volatility: 1.0, emoji: '💵' },
 };
 
 export const DEFAULT_ASSET_RETURNS: AssetReturns = {
@@ -54,9 +54,9 @@ export const DEFAULT_ASSET_RETURNS: AssetReturns = {
 const ASSET_KEYS: AssetClassKey[] = ['equity', 'bonds', 'cash'];
 const CORR_MATRIX: number[][] = [
   // eq    bonds  cash
-  [ 1.00,  0.10,  0.00 ], // equity
-  [ 0.10,  1.00,  0.30 ], // bonds
-  [ 0.00,  0.30,  1.00 ], // cash
+  [1.00, 0.10, 0.00], // equity
+  [0.10, 1.00, 0.30], // bonds
+  [0.00, 0.30, 1.00], // cash
 ];
 
 /**
