@@ -18,6 +18,7 @@ A comprehensive **Financial Independence, Retire Early (FIRE)** calculator built
 
 ### Financial Modeling
 - **Pension Integration** — Gap-year model accounts for pre-pension and post-pension phases separately
+- **Flexible Asset Modeling** — Invested assets, cash savings, custom assets (per-asset return/contribution), and real estate cash-flow/appreciation
 - **Debt Tracking** — Multiple debts with monthly payments and remaining years, factored into projections
 - **Life Events** — Planned future expenses (house purchase, wedding) and income (inheritance) with timeline
 - **Capital Gains Tax** — Applied to investment returns
@@ -45,7 +46,7 @@ A comprehensive **Financial Independence, Retire Early (FIRE)** calculator built
 - **Difference Indicators** — Shows how many years sooner/later each scenario reaches FIRE
 
 ### User Experience
-- **Multi-Currency** — EUR, USD, GBP, CHF with locale-aware formatting
+- **Multi-Currency** — 15 supported currencies (EUR, USD, GBP, CHF, JPY, CAD, AUD, NZD, CNY, HKD, SGD, INR, SEK, NOK, DKK) with locale-aware formatting
 - **Internationalization** — Full English and Italian translations
 - **Dark/Light Theme** — System preference detection with manual override
 - **Shareable URLs** — Encode all inputs in a URL hash for sharing
@@ -135,7 +136,8 @@ src/
 │       ├── index.ts            # i18n context and hooks
 │       └── types.ts            # Translation type definitions
 ├── store/
-│   └── fireStore.ts            # Zustand store (inputs, results, UI state)
+│   ├── fireStore.ts            # Zustand store for financial inputs + computed results
+│   └── uiStore.ts              # Zustand store for theme/locale/currency + UI preferences
 ├── test/
 │   ├── setup.ts                # Test setup (jest-dom matchers)
 │   ├── calculator.test.ts      # Calculator engine tests
@@ -193,6 +195,17 @@ TypeScript will enforce that all translation keys are provided — the project w
 ## Disclaimer
 
 This calculator is for **educational and planning purposes only**. It does not constitute financial advice. The projections are based on simplified models and assumptions (constant real returns, fixed inflation, etc.) that may not reflect actual market conditions. Always consult a qualified financial advisor for personal financial decisions.
+
+## Contributors
+
+Thanks to everyone who contributed to this project.
+
+- **Valerio Zamboni** — Project maintainer
+- **<Contributor Name>** — <Contribution summary>
+
+You can add new contributors using the same format:
+
+`- **Name** — What they contributed`
 
 ## License
 
