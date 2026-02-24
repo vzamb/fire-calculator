@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Theme } from '@/types';
 import type { Locale } from '@/lib/i18n';
-import { setActiveCurrency, setActiveLocale } from '@/lib/formatters';
+import { normalizeCurrency, setActiveCurrency, setActiveLocale } from '@/lib/formatters';
 
 interface UIStore {
   // UI State — which input sections are expanded
@@ -46,8 +46,9 @@ export const useUIStore = create<UIStore>()(
 
       currency: 'EUR',
       setCurrency: (currency) => {
-        setActiveCurrency(currency);
-        set({ currency });
+        const normalized = normalizeCurrency(currency);
+        setActiveCurrency(normalized);
+        set({ currency: normalized });
       },
 
       locale: 'en',
@@ -82,6 +83,7 @@ export const useUIStore = create<UIStore>()(
         return (state) => {
           if (state) {
             // Sync currency and locale to formatter module
+            state.currency = normalizeCurrency(state.currency);
             setActiveCurrency(state.currency);
             setActiveLocale(state.locale);
           }

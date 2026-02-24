@@ -88,6 +88,7 @@ function PortfolioSliders({
 }) {
   const t = useT();
   const [locked, setLocked] = useState<Partial<Record<AssetClassKey, boolean>>>({});
+  const [returnDrafts, setReturnDrafts] = useState<Partial<Record<AssetClassKey, string>>>({});
 
   const toggleLock = useCallback((key: AssetClassKey) => {
     setLocked((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -232,12 +233,38 @@ function PortfolioSliders({
               <span className="text-[10px] text-muted-foreground">{t.assetReturn}</span>
               <div className="flex items-center gap-1">
                 <input
-                  type="number"
-                  min={0}
-                  max={30}
-                  step={0.5}
-                  value={assetReturns[key] ?? cls.defaultReturn}
-                  onChange={(e) => handleReturnChange(key, Number(e.target.value))}
+                  type="text"
+                  inputMode="decimal"
+                  value={returnDrafts[key] ?? String(assetReturns[key] ?? cls.defaultReturn)}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setReturnDrafts((prev) => ({ ...prev, [key]: raw }));
+                    if (raw.trim() === '') return;
+                    const parsed = Number(raw.replace(',', '.'));
+                    if (Number.isFinite(parsed)) {
+                      const clamped = Math.max(0, Math.min(30, parsed));
+                      handleReturnChange(key, clamped);
+                    }
+                  }}
+                  onBlur={() => {
+                    const raw = returnDrafts[key];
+                    if (raw === undefined) return;
+                    const normalized = raw.replace(',', '.').trim();
+                    if (normalized === '') {
+                      handleReturnChange(key, 0);
+                    } else {
+                      const parsed = Number(normalized);
+                      if (Number.isFinite(parsed)) {
+                        const clamped = Math.max(0, Math.min(30, parsed));
+                        handleReturnChange(key, clamped);
+                      }
+                    }
+                    setReturnDrafts((prev) => {
+                      const next = { ...prev };
+                      delete next[key];
+                      return next;
+                    });
+                  }}
                   className="w-14 h-6 text-xs text-center bg-secondary border border-border rounded-md tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 <span className="text-[10px] text-muted-foreground">%</span>
@@ -467,15 +494,40 @@ export function InputPanel() {
         <div className="grid grid-cols-2 gap-2">
           {Object.entries(RISK_PROFILES).map(([key, profile]) => {
             const stats = computePortfolioStats(profile.allocation, profile.returns);
+            const displayReturn = key === 'custom'
+              ? (investmentStrategy.riskProfile === 'custom'
+                ? investmentStrategy.expectedAnnualReturn
+                : investmentStrategy.customExpectedAnnualReturn)
+              : stats.arithmeticReturn;
+            const displayVolatility = key === 'custom'
+              ? (investmentStrategy.riskProfile === 'custom'
+                ? investmentStrategy.annualVolatility
+                : investmentStrategy.customAnnualVolatility)
+              : stats.volatility;
             const isActive = investmentStrategy.riskProfile === key;
             return (
               <button
                 key={key}
                 onClick={() => {
                   if (key === 'custom') {
-                    updateInvestmentStrategy({ riskProfile: key as RiskProfile });
+                    const customAllocation = investmentStrategy.customPortfolioAllocation;
+                    const customReturns = investmentStrategy.customAssetReturns;
+                    const customStats = computePortfolioStats(customAllocation, customReturns);
+                    updateInvestmentStrategy({
+                      riskProfile: key as RiskProfile,
+                      portfolioAllocation: { ...customAllocation },
+                      assetReturns: { ...customReturns },
+                      expectedAnnualReturn: investmentStrategy.customExpectedAnnualReturn ?? customStats.arithmeticReturn,
+                      annualVolatility: investmentStrategy.customAnnualVolatility ?? customStats.volatility,
+                    });
                   } else {
                     updateInvestmentStrategy({
+                      ...(investmentStrategy.riskProfile === 'custom' ? {
+                        customPortfolioAllocation: { ...investmentStrategy.portfolioAllocation },
+                        customAssetReturns: { ...investmentStrategy.assetReturns },
+                        customExpectedAnnualReturn: investmentStrategy.expectedAnnualReturn,
+                        customAnnualVolatility: investmentStrategy.annualVolatility,
+                      } : {}),
                       riskProfile: key as RiskProfile,
                       portfolioAllocation: { ...profile.allocation },
                       assetReturns: { ...profile.returns },
@@ -494,7 +546,7 @@ export function InputPanel() {
                 <span className="text-xl leading-none shrink-0">{profile.emoji}</span>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold leading-tight">{tKey(t, key)}</p>
-                  <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">~{stats.arithmeticReturn}% · σ {stats.volatility}%</p>
+                  <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">~{displayReturn}% · σ {displayVolatility}%</p>
                 </div>
               </button>
             );
@@ -513,6 +565,10 @@ export function InputPanel() {
               assetReturns: newReturns,
               expectedAnnualReturn: stats.arithmeticReturn,
               annualVolatility: stats.volatility,
+              customPortfolioAllocation: newAlloc,
+              customAssetReturns: newReturns,
+              customExpectedAnnualReturn: stats.arithmeticReturn,
+              customAnnualVolatility: stats.volatility,
             });
           }}
         />

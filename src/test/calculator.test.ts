@@ -58,6 +58,10 @@ function makeInputs(overrides: Partial<{
       capitalGainsTaxRate: overrides.capitalGainsTax ?? 0,
       portfolioAllocation: { equity: 60, bonds: 30, cash: 10 },
       assetReturns: { equity: 8, bonds: 2.5, cash: 1.5 },
+      customPortfolioAllocation: { equity: 60, bonds: 30, cash: 10 },
+      customAssetReturns: { equity: 8, bonds: 2.5, cash: 1.5 },
+      customExpectedAnnualReturn: overrides.expectedReturn ?? 7,
+      customAnnualVolatility: 12,
     },
     fireGoals: {
       safeWithdrawalRate: overrides.swr ?? 4,

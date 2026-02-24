@@ -4,6 +4,83 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/utils';
 import { getCurrencySymbol } from '@/lib/formatters';
 
+interface EditableNumberInputProps {
+  value: number;
+  onChange: (value: number) => void;
+  min?: number;
+  max?: number;
+  className?: string;
+  icon?: React.ReactNode;
+  suffix?: string;
+  placeholder?: string;
+  step?: number;
+}
+
+function clampNumber(value: number, min?: number, max?: number): number {
+  if (typeof min === 'number' && value < min) return min;
+  if (typeof max === 'number' && value > max) return max;
+  return value;
+}
+
+function EditableNumberInput({ value, onChange, min, max, ...props }: EditableNumberInputProps) {
+  const [draft, setDraft] = React.useState(String(value ?? ''));
+  const [isFocused, setIsFocused] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isFocused) {
+      setDraft(String(value ?? ''));
+    }
+  }, [value, isFocused]);
+
+  const commit = (rawValue: string) => {
+    const normalized = rawValue.replace(',', '.').trim();
+    if (normalized === '' || normalized === '-' || normalized === '.' || normalized === '-.') {
+      const clampedZero = clampNumber(0, min, max);
+      onChange(clampedZero);
+      setDraft(String(clampedZero));
+      return;
+    }
+
+    const parsed = Number(normalized);
+    if (!Number.isFinite(parsed)) {
+      setDraft(String(value ?? ''));
+      return;
+    }
+
+    const clamped = clampNumber(parsed, min, max);
+    onChange(clamped);
+    setDraft(String(clamped));
+  };
+
+  return (
+    <Input
+      type="text"
+      inputMode="decimal"
+      value={draft}
+      onFocus={() => setIsFocused(true)}
+      onBlur={(e) => {
+        setIsFocused(false);
+        commit(e.target.value);
+      }}
+      onChange={(e) => {
+        const raw = e.target.value;
+        setDraft(raw);
+
+        const normalized = raw.replace(',', '.').trim();
+        if (normalized === '' || normalized === '-' || normalized === '.' || normalized === '-.') {
+          return;
+        }
+
+        const parsed = Number(normalized);
+        if (Number.isFinite(parsed)) {
+          onChange(clampNumber(parsed, min, max));
+        }
+      }}
+      {...props}
+    />
+  );
+}
+
 interface FormFieldProps {
   label: string;
   tooltip?: string;
@@ -42,10 +119,9 @@ export function CurrencyInput({
 }: CurrencyInputProps) {
   return (
     <FormField label={label} tooltip={tooltip} className={className}>
-      <Input
-        type="number"
-        value={value || ''}
-        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+      <EditableNumberInput
+        value={value}
+        onChange={onChange}
         placeholder={placeholder}
         icon={<span className="text-sm font-medium">{getCurrencySymbol()}</span>}
         min={0}
@@ -77,10 +153,9 @@ export function PercentInput({
 }: PercentInputProps) {
   return (
     <FormField label={label} tooltip={tooltip} className={className}>
-      <Input
-        type="number"
-        value={value || ''}
-        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+      <EditableNumberInput
+        value={value}
+        onChange={onChange}
         suffix="%"
         step={step}
         min={min}
@@ -113,10 +188,9 @@ export function NumberInput({
 }: NumberInputProps) {
   return (
     <FormField label={label} tooltip={tooltip} className={className}>
-      <Input
-        type="number"
-        value={value || ''}
-        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+      <EditableNumberInput
+        value={value}
+        onChange={onChange}
         suffix={suffix}
         min={min}
         max={max}

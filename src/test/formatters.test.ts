@@ -32,8 +32,8 @@ describe('formatters', () => {
     });
 
     it('returns code + space for unknown currencies', () => {
-      setActiveCurrency('JPY');
-      expect(getCurrencySymbol()).toBe('JPY ');
+      setActiveCurrency('XYZ');
+      expect(getCurrencySymbol()).toBe('XYZ ');
     });
   });
 

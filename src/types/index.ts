@@ -73,6 +73,10 @@ export interface InvestmentStrategy {
   capitalGainsTaxRate: number; // percentage
   portfolioAllocation: PortfolioAllocation;
   assetReturns: AssetReturns; // user-configurable returns per asset class
+  customPortfolioAllocation: PortfolioAllocation;
+  customAssetReturns: AssetReturns;
+  customExpectedAnnualReturn: number;
+  customAnnualVolatility: number;
 }
 
 // ─── FIRE Goals ───

@@ -120,7 +120,7 @@ export function ProfileManager() {
                 </button>
                 <button
                   onClick={() => handleDelete(profile.id)}
-                  className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+                  className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>

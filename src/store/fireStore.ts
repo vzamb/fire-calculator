@@ -150,12 +150,30 @@ export const useFireStore = create<FireStore>()(
               state.inputs.investmentStrategy.assetReturns = { ...DEFAULT_ASSET_RETURNS };
             }
 
+            // Ensure persisted custom strategy exists
+            if (!strategy.customPortfolioAllocation || typeof strategy.customPortfolioAllocation !== 'object') {
+              state.inputs.investmentStrategy.customPortfolioAllocation = {
+                ...state.inputs.investmentStrategy.portfolioAllocation,
+              };
+            }
+            if (!strategy.customAssetReturns || typeof strategy.customAssetReturns !== 'object') {
+              state.inputs.investmentStrategy.customAssetReturns = {
+                ...state.inputs.investmentStrategy.assetReturns,
+              };
+            }
+
             // Recompute stats from the (migrated) allocation
             const finalAlloc = state.inputs.investmentStrategy.portfolioAllocation;
             const finalReturns = state.inputs.investmentStrategy.assetReturns;
             const stats = computePortfolioStats(finalAlloc, finalReturns);
             state.inputs.investmentStrategy.expectedAnnualReturn = stats.arithmeticReturn;
             state.inputs.investmentStrategy.annualVolatility = stats.volatility;
+
+            const customAlloc = state.inputs.investmentStrategy.customPortfolioAllocation;
+            const customReturns = state.inputs.investmentStrategy.customAssetReturns;
+            const customStats = computePortfolioStats(customAlloc, customReturns);
+            state.inputs.investmentStrategy.customExpectedAnnualReturn = customStats.arithmeticReturn;
+            state.inputs.investmentStrategy.customAnnualVolatility = customStats.volatility;
 
             if (!Array.isArray(state.inputs.fireGoals.recurringIncomes)) {
               state.inputs.fireGoals.recurringIncomes = DEFAULT_INPUTS.fireGoals.recurringIncomes;

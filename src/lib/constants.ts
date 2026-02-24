@@ -112,6 +112,10 @@ export const DEFAULT_INVESTMENT_STRATEGY: InvestmentStrategy = {
   capitalGainsTaxRate: 26,
   portfolioAllocation: DEFAULT_ALLOCATION,
   assetReturns: { ...DEFAULT_ASSET_RETURNS },
+  customPortfolioAllocation: { ...DEFAULT_ALLOCATION },
+  customAssetReturns: { ...DEFAULT_ASSET_RETURNS },
+  customExpectedAnnualReturn: defaultStats.arithmeticReturn,
+  customAnnualVolatility: defaultStats.volatility,
 };
 
 export const DEFAULT_FIRE_GOALS: FireGoals = {

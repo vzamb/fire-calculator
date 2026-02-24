@@ -5,6 +5,7 @@ import { useUIStore } from '@/store/uiStore';
 import { useT } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n/types';
 import { generateShareUrl } from '@/lib/sharing';
+import { SUPPORTED_CURRENCIES } from '@/lib/formatters';
 
 const GITHUB_URL = 'https://github.com/vzamb/fire-calculator';
 const BMC_URL = 'https://buymeacoffee.com/vzamb';
@@ -109,10 +110,11 @@ export function Header() {
                     onChange={(e) => setCurrency(e.target.value)}
                     className="mt-1 w-full h-8 rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
                   >
-                    <option value="EUR">€ EUR</option>
-                    <option value="USD">$ USD</option>
-                    <option value="GBP">£ GBP</option>
-                    <option value="CHF">CHF</option>
+                    {SUPPORTED_CURRENCIES.map((item) => (
+                      <option key={item.code} value={item.code}>
+                        {item.code} — {item.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -146,7 +148,7 @@ export function Header() {
 
                 {/* Share */}
                 <button
-                  onClick={() => { handleShare(); setSettingsOpen(false); }}
+                  onClick={handleShare}
                   className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-foreground hover:bg-secondary/50 transition-colors"
                 >
                   {copied

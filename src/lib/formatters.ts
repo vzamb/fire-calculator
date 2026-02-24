@@ -1,14 +1,36 @@
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  EUR: '€',
-  USD: '$',
-  GBP: '£',
-  CHF: 'CHF ',
-};
+export const SUPPORTED_CURRENCIES = [
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'CHF', symbol: 'CHF ', name: 'Swiss Franc' },
+  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
+  { code: 'NZD', symbol: 'NZ$', name: 'New Zealand Dollar' },
+  { code: 'CNY', symbol: '¥', name: 'Chinese Yuan' },
+  { code: 'HKD', symbol: 'HK$', name: 'Hong Kong Dollar' },
+  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
+  { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
+  { code: 'SEK', symbol: 'kr', name: 'Swedish Krona' },
+  { code: 'NOK', symbol: 'kr', name: 'Norwegian Krone' },
+  { code: 'DKK', symbol: 'kr', name: 'Danish Krone' },
+] as const;
+
+const CURRENCY_SYMBOLS: Record<string, string> = Object.fromEntries(
+  SUPPORTED_CURRENCIES.map((currency) => [currency.code, currency.symbol])
+);
+
+const SUPPORTED_CURRENCY_CODES = new Set<string>(SUPPORTED_CURRENCIES.map((currency) => currency.code));
+
+export function normalizeCurrency(currency: string): string {
+  const normalized = (currency ?? '').toUpperCase();
+  return SUPPORTED_CURRENCY_CODES.has(normalized) ? normalized : 'EUR';
+}
 
 let _activeCurrency = 'EUR';
 
 export function setActiveCurrency(currency: string) {
-  _activeCurrency = currency;
+  _activeCurrency = (currency ?? '').toUpperCase() || 'EUR';
 }
 
 export function getCurrencySymbol(): string {
