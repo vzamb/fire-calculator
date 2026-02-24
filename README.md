@@ -200,12 +200,9 @@ This calculator is for **educational and planning purposes only**. It does not c
 
 Thanks to everyone who contributed to this project.
 
-- **Valerio Zamboni** — Project maintainer
-- **<Contributor Name>** — <Contribution summary>
+- [vzamb](https://github.com/vzamb) — Project maintainer
+- [brandonp20](https://github.com/brandonp20) — Custom assets support 
 
-You can add new contributors using the same format:
-
-`- **Name** — What they contributed`
 
 ## License
 
