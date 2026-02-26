@@ -80,7 +80,7 @@ export function Header() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Buy me a coffee"
-            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-secondary/50 transition-colors shrink-0"
+            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-amber-500/20 bg-amber-500/10 text-xs font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/30 transition-colors shrink-0"
           >
             <span>☕</span>
             <span className="hidden sm:inline">Buy me a coffee</span>

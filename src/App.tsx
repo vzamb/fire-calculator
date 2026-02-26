@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
 import { InputPanel } from '@/components/layout/InputPanel';
 import { ResultsDashboard } from '@/components/results/ResultsDashboard';
 import { useFireStore } from '@/store/fireStore';
@@ -27,7 +28,7 @@ function App() {
 
   return (
     <I18nContext.Provider value={t}>
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Decorative background gradient */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-1/2 -right-1/4 w-[800px] h-[800px] rounded-full bg-gradient-to-br from-orange-500/5 via-red-500/5 to-transparent blur-3xl" />
@@ -36,7 +37,7 @@ function App() {
 
       <Header />
 
-      <main className="max-w-[1440px] mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
+      <main className="max-w-[1440px] mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 flex-1">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left: Inputs Panel */}
           <aside className="w-full lg:w-[380px] lg:shrink-0 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1 scrollbar-thin">
@@ -48,6 +49,8 @@ function App() {
           </div>
         </div>
       </main>
+      
+      <Footer />
       <SpeedInsights />
     </div>
     </I18nContext.Provider>
