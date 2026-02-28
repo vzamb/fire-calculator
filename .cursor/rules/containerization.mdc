@@ -1,0 +1,36 @@
+---
+description: Context for container support added to this forked FIRE calculator
+alwaysApply: true
+---
+
+# Containerization Context
+
+This repo is a fork of https://github.com/vzamb/fire-calculator (configured as the `upstream` remote). Our sole modification is adding container support. **Never modify existing upstream files** — only add new files — so that `git merge upstream/main` stays conflict-free.
+
+## Container Stack
+
+- **Build stage**: `node:22-alpine` (discarded after build)
+- **Runtime stage**: `cgr.dev/chainguard/nginx:latest` — distroless, non-root, port 8080
+- **Container runtime**: Podman (rootless)
+
+## Key Files We Added
+
+| File | Purpose |
+|------|---------|
+| `Dockerfile` | Multi-stage build: Node build + Chainguard Nginx runtime |
+| `nginx.conf` | SPA routing, gzip, asset caching (port 8080) |
+| `.dockerignore` | Keeps build context small |
+| `container-build.sh` | Builds the container image with Podman |
+| `container-run.sh` | Runs the container (auto-detects podman/docker, prefers podman) |
+| `container-smoke-test.sh` | Runs container, smoke tests with curl, cleans up |
+| `container-delete.sh` | Removes the container image (auto-detects podman/docker) |
+
+## Quick Reference
+
+```bash
+./container-build.sh                  # build the image
+./container-run.sh                    # run on port 18080 (auto-detects podman/docker)
+./container-run.sh 12345              # run on a custom port
+./container-smoke-test.sh             # test (image must be built first)
+./container-smoke-test.sh 12345       # test on a custom port
+```

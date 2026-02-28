@@ -192,6 +192,39 @@ Where $\mu$ is the expected net return, $\sigma = 0.12$ (diversified portfolio v
 
 TypeScript will enforce that all translation keys are provided — the project won't compile with missing translations.
 
+## Running in a Container
+
+You can build and run this application locally as a container using Podman or Docker. The container uses a multi-stage build: Node.js compiles the app, then the static output is served by a minimal [Chainguard](https://www.chainguard.dev/) nginx image (distroless, non-root, zero known CVEs).
+
+### Prerequisites
+
+- [Podman](https://podman.io/) or [Docker](https://www.docker.com/)
+
+### Scripts
+
+| Script | Description |
+|--------|-------------|
+| `./container-build.sh` | Build the container image |
+| `./container-run.sh` | Run the container (default port 18080) |
+| `./container-smoke-test.sh` | Run smoke tests against a running container |
+| `./container-delete.sh` | Stop and remove the container image |
+
+### Quick Start
+
+```bash
+./container-build.sh
+./container-run.sh
+```
+
+Open http://127.0.0.1:18080 in your browser. Press `Ctrl+C` to stop.
+
+All scripts auto-detect Podman or Docker (preferring Podman). The run and smoke test scripts accept a custom port as an argument:
+
+```bash
+./container-run.sh 12345          # run on port 12345
+./container-smoke-test.sh 12345   # test on port 12345
+```
+
 ## Disclaimer
 
 This calculator is for **educational and planning purposes only**. It does not constitute financial advice. The projections are based on simplified models and assumptions (constant real returns, fixed inflation, etc.) that may not reflect actual market conditions. Always consult a qualified financial advisor for personal financial decisions.
