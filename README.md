@@ -194,7 +194,7 @@ TypeScript will enforce that all translation keys are provided — the project w
 
 ## Running in a Container
 
-You can build and run this application locally as a container using Podman or Docker. The container uses a multi-stage build: Node.js compiles the app, then the static output is served by a minimal [Chainguard](https://www.chainguard.dev/) nginx image (distroless, non-root, zero known CVEs).
+You can build and run this application locally as a container using Podman or Docker. The container uses a multi-stage build: Node.js compiles the app, then the static output is served by a minimal [Chainguard](https://www.chainguard.dev/) nginx image (distroless, non-root, zero known CVEs at the time of writing).
 
 ### Prerequisites
 
@@ -206,8 +206,8 @@ You can build and run this application locally as a container using Podman or Do
 |--------|-------------|
 | `./container-build.sh` | Build the container image |
 | `./container-run.sh` | Run the container (default port 18080) |
-| `./container-smoke-test.sh` | Run smoke tests against a running container |
-| `./container-delete.sh` | Stop and remove the container image |
+| `./container-smoke-test.sh` | Run smoke tests against the running container (assumes default port 18080) |
+| `./container-delete.sh` | Stop and remove the container image from your local image repository (freeing up space) |
 
 ### Quick Start
 
@@ -223,6 +223,14 @@ All scripts auto-detect Podman or Docker (preferring Podman). The run and smoke 
 ```bash
 ./container-run.sh 12345          # run on port 12345
 ./container-smoke-test.sh 12345   # test on port 12345
+```
+
+#### Clean Up
+
+To stop the container (if it is still running) and remove the container image, run the following command:
+
+```bash
+./container-delete.sh
 ```
 
 ## Disclaimer
