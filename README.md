@@ -243,6 +243,7 @@ Thanks to everyone who contributed to this project.
 
 - [vzamb](https://github.com/vzamb) — Project maintainer
 - [brandonp20](https://github.com/brandonp20) — Custom assets support 
+- [benwilcock](https://github.com/benwilcock) - Docker support
 
 
 ## License
