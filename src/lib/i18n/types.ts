@@ -31,11 +31,14 @@ export interface Translations {
   annualSalaryGrowthTooltip: string;
   additionalMonthlyIncome: string;
   additionalMonthlyIncomeTooltip: string;
+  annualBonus: string;
+  annualBonusTooltip: string;
   futurePension: string;
   monthlyPension: string;
   monthlyPensionTooltip: string;
   pensionStartAge: string;
   noPensions: string;
+  pensionContributionHint: string;
   pensionPlaceholder: (i: number) => string;
 
   // ─── Expenses ───
@@ -62,6 +65,7 @@ export interface Translations {
   assetTypeRothIra: string;
   assetTypeBrokerage: string;
   assetTypeHysa: string;
+  assetTypePension: string;
   assetTypeOther: string;
   noCustomAssets: string;
   assetBalance: string;
@@ -154,6 +158,10 @@ export interface Translations {
   fatFireDesc: string;
   safeWithdrawalRate: string;
   swrHint: string;
+  depletePortfolio: string;
+  depletePortfolioTooltip: string;
+  preserveCapital: string;
+  dieWithZero: string;
 
   // ─── Results — Summary Cards ───
   fireAge: string;
@@ -293,6 +301,43 @@ export interface Translations {
   defaultProfileName: string;
   noSavedProfiles: string;
   profileSaved: string;
+
+  // ─── Guided Examples ───
+  guide: string;
+  guidePanelTitle: string;
+  guideConceptsTitle: string;
+  guideConceptFireTitle: string;
+  guideConceptFireBody: string;
+  guideConceptSwrTitle: string;
+  guideConceptSwrBody: string;
+  guideConceptCoastTitle: string;
+  guideConceptCoastBody: string;
+  guideConceptMonteCarloTitle: string;
+  guideConceptMonteCarloBody: string;
+  guideConceptFireNumberTitle: string;
+  guideConceptFireNumberBody: string;
+  guideConceptProjectionsTitle: string;
+  guideConceptProjectionsBody: string;
+  guideConceptPortfolioStrategyTitle: string;
+  guideConceptPortfolioStrategyBody: string;
+  guideConceptPensionsTitle: string;
+  guideConceptPensionsBody: string;
+  guideHowItWorksTitle: string;
+  guideHowItWorksBody: string;
+  guideExamplesTitle: string;
+  guideExamplesDesc: string;
+  guideScenario_freshGraduate: string;
+  guideScenario_freshGraduate_desc: string;
+  guideScenario_midCareer: string;
+  guideScenario_midCareer_desc: string;
+  guideScenario_aggressiveSaver: string;
+  guideScenario_aggressiveSaver_desc: string;
+  guideScenario_baristaFire: string;
+  guideScenario_baristaFire_desc: string;
+  guideScenario_lateStarter: string;
+  guideScenario_lateStarter_desc: string;
+  guideScenario_dualIncome: string;
+  guideScenario_dualIncome_desc: string;
 
   // ─── Formatters ───
   years: string;

@@ -289,11 +289,12 @@ export function InputPanel() {
   const t = useT();
 
   const { personalInfo, income, expenses, assets, investmentStrategy, fireGoals } = inputs;
-  const totalMonthlyIncome = income.monthlyNetSalary + income.additionalMonthlyIncome;
+  const bonusMonthly = Math.round((income.annualBonus ?? 0) / 12);
+  const totalMonthlyIncome = income.monthlyNetSalary + income.additionalMonthlyIncome + bonusMonthly;
   const customMonthlyContributions = assets.customAssets.reduce((sum, asset) => sum + asset.monthlyContribution, 0);
   const totalMonthlyInvesting = fireGoals.monthlyInvestment + customMonthlyContributions;
   const totalDebtPayments = assets.debts.reduce((s, d) => s + d.monthlyPayment, 0);
-  const availableToInvest = Math.max(0, totalMonthlyIncome - expenses.monthlyExpenses - totalDebtPayments - customMonthlyContributions);
+  const availableToInvest = Math.round(Math.max(0, totalMonthlyIncome - expenses.monthlyExpenses - totalDebtPayments - customMonthlyContributions));
 
   return (
     <div className="space-y-3">
@@ -374,7 +375,7 @@ export function InputPanel() {
         />
         <Slider
           label={t.lifeExpectancy}
-          min={70}
+          min={50}
           max={100}
           value={personalInfo.lifeExpectancy}
           onChange={(v) => updatePersonalInfo({ lifeExpectancy: v })}
@@ -413,6 +414,12 @@ export function InputPanel() {
           value={income.additionalMonthlyIncome}
           onChange={(v) => updateIncome({ additionalMonthlyIncome: v })}
         />
+        <CurrencyInput
+          label={t.annualBonus}
+          tooltip={t.annualBonusTooltip}
+          value={income.annualBonus ?? 0}
+          onChange={(v) => updateIncome({ annualBonus: v })}
+        />
         <div className="pt-3 border-t border-border space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-muted-foreground">{t.futurePension}</p>
@@ -432,6 +439,8 @@ export function InputPanel() {
           {income.pensions.length === 0 && (
             <p className="text-xs text-muted-foreground/60 text-center py-2">{t.noPensions}</p>
           )}
+
+          <p className="text-[10px] text-muted-foreground">{t.pensionContributionHint}</p>
 
           {income.pensions.map((pension, i) => (
             <div key={pension.id} className="border border-border rounded-lg p-3 space-y-3 animate-slide-up">
@@ -766,6 +775,7 @@ function AssetsSection() {
                 <option value="rothIra">{t.assetTypeRothIra}</option>
                 <option value="brokerage">{t.assetTypeBrokerage}</option>
                 <option value="hysa">{t.assetTypeHysa}</option>
+                <option value="pension">{t.assetTypePension}</option>
                 <option value="other">{t.assetTypeOther}</option>
               </select>
               <Button
@@ -1328,6 +1338,38 @@ function GoalsSection() {
       <p className="text-[10px] text-muted-foreground -mt-3">
         {t.swrHint}
       </p>
+
+      {/* Portfolio Strategy: Die with Zero vs Preserve Capital */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium">{t.depletePortfolio}</label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => updateFireGoals({ depletePortfolio: true })}
+            className={`flex-1 h-8 rounded-md text-xs font-medium border transition-colors ${
+              fireGoals.depletePortfolio !== false
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-background text-foreground border-border hover:bg-muted'
+            }`}
+          >
+            {t.dieWithZero}
+          </button>
+          <button
+            type="button"
+            onClick={() => updateFireGoals({ depletePortfolio: false })}
+            className={`flex-1 h-8 rounded-md text-xs font-medium border transition-colors ${
+              fireGoals.depletePortfolio === false
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-background text-foreground border-border hover:bg-muted'
+            }`}
+          >
+            {t.preserveCapital}
+          </button>
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          {t.depletePortfolioTooltip}
+        </p>
+      </div>
     </Section>
   );
 }

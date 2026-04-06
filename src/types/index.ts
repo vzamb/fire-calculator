@@ -16,6 +16,7 @@ export interface IncomeInfo {
   monthlyNetSalary: number;
   annualSalaryGrowth: number; // percentage
   additionalMonthlyIncome: number;
+  annualBonus: number; // annual bonus/irregular income
   pensions: Pension[];
 }
 
@@ -27,7 +28,7 @@ export interface ExpensesInfo {
 }
 
 // ─── Assets ───
-export type AssetType = 'tradIra' | 'rothIra' | 'brokerage' | 'hysa' | 'other';
+export type AssetType = 'tradIra' | 'rothIra' | 'brokerage' | 'hysa' | 'pension' | 'other';
 
 export interface CustomAsset {
   id: string;
@@ -99,6 +100,7 @@ export interface FireGoals {
   safeWithdrawalRate: number; // percentage
   fireType: FireType;
   monthlyInvestment: number; // how much user invests per month
+  depletePortfolio: boolean; // true = die with zero, false = preserve capital (perpetual)
   futureExpenses: FutureExpense[];
   futureIncomes: FutureIncome[];
   recurringIncomes: RecurringIncome[];

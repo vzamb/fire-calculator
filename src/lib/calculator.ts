@@ -44,8 +44,8 @@ export function calculateFire(inputs: FireInputs): FireResult {
   } = inputs;
 
   // ─── Core rates ───
-  const swr = fireGoals.safeWithdrawalRate / 100;
-  const postRetirementFactor = expenses.postRetirementExpensePercent / 100;
+  const swr = Math.max(0.001, fireGoals.safeWithdrawalRate / 100);
+  const postRetirementFactor = Math.max(0, expenses.postRetirementExpensePercent / 100);
   const grossReturn = investmentStrategy.expectedAnnualReturn / 100;
   const annualFees = investmentStrategy.annualFees / 100;
   const capitalGainsTax = investmentStrategy.capitalGainsTaxRate / 100;
@@ -55,7 +55,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
   const volPct = investmentStrategy.annualVolatility;
   const geoReturnPct = geometricReturn(arithmeticNet * 100, volPct);
   const netReturn = geoReturnPct / 100;
-  const inflation = expenses.annualInflationRate / 100;
+  const inflation = Math.max(0, expenses.annualInflationRate / 100);
   const realReturn = Math.max(0.001, (1 + netReturn) / (1 + inflation) - 1);
 
   // ─── FIRE Number in TODAY's euros ───
@@ -68,17 +68,20 @@ export function calculateFire(inputs: FireInputs): FireResult {
   const recurringIncomeEntries = toRecurringIncomeEntries(inputs);
 
   const totalMonthlyIncome = income.monthlyNetSalary + income.additionalMonthlyIncome;
+  const annualBonus = income.annualBonus ?? 0;
   const customMonthlyUserContrib = assets.customAssets.reduce((sum, asset) => sum + asset.monthlyContribution, 0);
   let currentMonthlyInvestment = fireGoals.monthlyInvestment;
   const totalMonthlySavings = currentMonthlyInvestment + customMonthlyUserContrib;
 
+  // Include bonus in savings rate calculation
+  const totalAnnualIncomeForRate = totalMonthlyIncome * 12 + annualBonus;
   const currentSavingsRate =
-    totalMonthlyIncome > 0
-      ? (totalMonthlySavings / totalMonthlyIncome) * 100
+    totalAnnualIncomeForRate > 0
+      ? ((totalMonthlySavings * 12) / totalAnnualIncomeForRate) * 100
       : 0;
 
   // ─── Year-by-year projection ───
-  const maxYears = personalInfo.lifeExpectancy - personalInfo.currentAge + 1;
+  const maxYears = Math.max(1, personalInfo.lifeExpectancy - personalInfo.currentAge + 1);
   const yearlyProjections: YearlyProjection[] = [];
 
   let mainPortfolio = assets.investedAssets + assets.cashSavings;
@@ -96,6 +99,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
   let cumulativeGrowth = 0;
   let salary = income.monthlyNetSalary;
   let additionalIncome = income.additionalMonthlyIncome;
+  let currentBonus = annualBonus;
   // livingExpenses is the annual living cost, inflated each year
   let livingExpenses = baseAnnualExpenses;
   // retirementExpenses is captured at the point of FIRE, then inflated onward
@@ -127,7 +131,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
       });
 
     // ── Income ──
-    const totalAnnualIncome = (salary + additionalIncome) * 12;
+    const totalAnnualIncome = (salary + additionalIncome) * 12 + currentBonus;
 
     // ── Pension (inflation-adjusted — state pensions like INPS grow with CPI) ──
     let pensionIncome = 0;
@@ -160,7 +164,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
 
     if (!isRetired) {
       // ══ ACCUMULATION PHASE ══
-      const mainContrib = currentMonthlyInvestment * 12;
+      const mainContrib = currentMonthlyInvestment * 12 + currentBonus;
       let totalCustomContrib = 0;
       let totalCustomGrowth = 0;
 
@@ -239,7 +243,8 @@ export function calculateFire(inputs: FireInputs): FireResult {
         inflation,
         recurringIncomeEntries.filter((inc) => inc.startAge <= age || inc.includeInFire),
         capitalGainsTax,
-        currentCostBasisRatio
+        currentCostBasisRatio,
+        fireGoals.depletePortfolio !== false,
       );
 
       // Debt cost — PV of remaining fixed nominal payments
@@ -380,6 +385,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
       additionalIncome *= 1 + inflation;
       livingExpenses *= 1 + inflation;
       currentMonthlyInvestment *= 1 + income.annualSalaryGrowth / 100;
+      currentBonus *= 1 + income.annualSalaryGrowth / 100;
     }
   }
 
@@ -388,7 +394,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
     fireAge = personalInfo.lifeExpectancy;
   }
 
-  const yearsToFire = fireAge - personalInfo.currentAge;
+  const yearsToFire = Math.max(0, fireAge - personalInfo.currentAge);
 
   // The FIRE number shown to the user is the adjusted target at the projected FIRE age.
   const retExpTdy = baseAnnualExpenses * postRetirementFactor;
@@ -403,7 +409,8 @@ export function calculateFire(inputs: FireInputs): FireResult {
     inflation,
     recurringIncomeEntries.filter((inc) => inc.startAge <= fireAge || inc.includeInFire),
     capitalGainsTax,
-    finalCostBasisRatio
+    finalCostBasisRatio,
+    fireGoals.depletePortfolio !== false,
   ) + debtCostAtFire;
   const fireNumber = adjustedFireNumberToday * Math.pow(1 + inflation, yearsToFire);
 
@@ -424,7 +431,8 @@ export function calculateFire(inputs: FireInputs): FireResult {
     inflation,
     recurringIncomeEntries.filter((inc) => inc.startAge <= coastTargetAge || inc.includeInFire),
     capitalGainsTax,
-    finalCostBasisRatio
+    finalCostBasisRatio,
+    fireGoals.depletePortfolio !== false,
   );
   const coastTarget = coastReqToday *
     Math.pow(1 + inflation, coastTargetAge - personalInfo.currentAge);
@@ -455,7 +463,7 @@ export function calculateFire(inputs: FireInputs): FireResult {
   );
 
   // Success rate — what % of retirement years have positive portfolio
-  const retirementYears = personalInfo.lifeExpectancy - fireAge;
+  const retirementYears = Math.max(0, personalInfo.lifeExpectancy - fireAge);
   const retirementProjections = yearlyProjections.filter((p) => p.isRetired);
   const yearsWithPositivePortfolio = retirementProjections.filter(
     (p) => p.portfolioValue > 0
@@ -465,27 +473,30 @@ export function calculateFire(inputs: FireInputs): FireResult {
       ? (yearsWithPositivePortfolio / retirementProjections.length) * 100
       : 100;
 
+  // Sanitize all numeric outputs against NaN/Infinity
+  const sanitize = (v: number): number => Number.isFinite(v) ? v : 0;
+
   return {
-    fireNumber,
-    fireNumberToday: adjustedFireNumberToday,
-    fireNumberBaseToday,
+    fireNumber: sanitize(fireNumber),
+    fireNumberToday: sanitize(adjustedFireNumberToday),
+    fireNumberBaseToday: sanitize(fireNumberBaseToday),
     fireAge,
     fireDate,
     yearsToFire,
-    currentSavingsRate,
-    monthlySavings: totalMonthlySavings,
+    currentSavingsRate: sanitize(currentSavingsRate),
+    monthlySavings: sanitize(totalMonthlySavings),
     coastFireAge,
-    baristaFireIncome,
+    baristaFireIncome: sanitize(baristaFireIncome),
     yearlyProjections,
-    totalContributions: cumulativeContributions,
-    totalGrowth: cumulativeGrowth,
-    portfolioAtRetirement: retirementProjection?.portfolioValue ?? 0,
-    portfolioAt90: at90?.portfolioValue ?? 0,
+    totalContributions: sanitize(cumulativeContributions),
+    totalGrowth: sanitize(cumulativeGrowth),
+    portfolioAtRetirement: sanitize(retirementProjection?.portfolioValue ?? 0),
+    portfolioAt90: sanitize(at90?.portfolioValue ?? 0),
     retirementYears,
-    successRate,
-    bridgeGap: bridgeGapAtFire,
-    bridgeIncomeTotal: bridgeIncomeTotalAtFire,
-    pensionCreditToday: pensionCreditAtFire,
-    debtCostToday: debtCostAtFire,
+    successRate: sanitize(successRate),
+    bridgeGap: sanitize(bridgeGapAtFire),
+    bridgeIncomeTotal: sanitize(bridgeIncomeTotalAtFire),
+    pensionCreditToday: sanitize(pensionCreditAtFire),
+    debtCostToday: sanitize(debtCostAtFire),
   };
 }

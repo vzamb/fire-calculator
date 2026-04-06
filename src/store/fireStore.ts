@@ -112,6 +112,11 @@ export const useFireStore = create<FireStore>()(
               delete income.pensionStartAge;
             }
 
+            // Ensure annualBonus field exists
+            if (typeof state.inputs.income.annualBonus !== 'number') {
+              state.inputs.income.annualBonus = 0;
+            }
+
             if (typeof state.inputs.investmentStrategy.annualVolatility !== 'number') {
               state.inputs.investmentStrategy.annualVolatility = DEFAULT_INPUTS.investmentStrategy.annualVolatility;
             }
@@ -177,6 +182,10 @@ export const useFireStore = create<FireStore>()(
 
             if (!Array.isArray(state.inputs.fireGoals.recurringIncomes)) {
               state.inputs.fireGoals.recurringIncomes = DEFAULT_INPUTS.fireGoals.recurringIncomes;
+            }
+
+            if (typeof state.inputs.fireGoals.depletePortfolio !== 'boolean') {
+              state.inputs.fireGoals.depletePortfolio = true;
             }
 
             // Migrate legacy singular fields to dynamic customAssets

@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Moon, Sun, RotateCcw, Share2, Check, Settings2, Github } from 'lucide-react';
+import { Moon, Sun, RotateCcw, Share2, Check, Settings2, Github, BookOpen } from 'lucide-react';
 import { useFireStore } from '@/store/fireStore';
 import { useUIStore } from '@/store/uiStore';
 import { useT } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n/types';
 import { generateShareUrl } from '@/lib/sharing';
 import { SUPPORTED_CURRENCIES } from '@/lib/formatters';
+import { GuidedExamples } from './GuidedExamples';
 
 const GITHUB_URL = 'https://github.com/vzamb/fire-calculator';
 const BMC_URL = 'https://buymeacoffee.com/vzamb';
@@ -16,12 +17,13 @@ export function Header() {
   const t = useT();
   const [copied, setCopied] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
   const handleShare = async () => {
-    const url = generateShareUrl(inputs);
+    const url = generateShareUrl(inputs, currency);
     await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -40,6 +42,7 @@ export function Header() {
   }, [settingsOpen]);
 
   return (
+    <>
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl">
       <div className="max-w-[1440px] mx-auto flex h-14 items-center justify-between px-4 sm:px-6">
 
@@ -86,6 +89,16 @@ export function Header() {
             <span className="hidden sm:inline">Buy me a coffee</span>
           </a>
 
+          {/* Guide button */}
+          <button
+            onClick={() => setGuideOpen(true)}
+            aria-label="Guide"
+            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-secondary/50 transition-colors"
+          >
+            <BookOpen className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">{t.guide}</span>
+          </button>
+
           {/* Settings dropdown */}
           <div className="relative" ref={settingsRef}>
             <button
@@ -106,8 +119,10 @@ export function Header() {
                     {t.currency}
                   </label>
                   <select
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
+                    value={SUPPORTED_CURRENCIES.some(c => c.code === currency) ? currency : '__custom__'}
+                    onChange={(e) => {
+                      if (e.target.value !== '__custom__') setCurrency(e.target.value);
+                    }}
                     className="mt-1 w-full h-8 rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
                   >
                     {SUPPORTED_CURRENCIES.map((item) => (
@@ -115,7 +130,20 @@ export function Header() {
                         {item.code} — {item.name}
                       </option>
                     ))}
+                    <option value="__custom__">Custom…</option>
                   </select>
+                  {(!SUPPORTED_CURRENCIES.some(c => c.code === currency) || currency === '__custom__') ? null : null}
+                  <input
+                    type="text"
+                    placeholder="e.g. ARS"
+                    maxLength={3}
+                    value={SUPPORTED_CURRENCIES.some(c => c.code === currency) ? '' : currency}
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                      if (val.length <= 3) setCurrency(val || 'EUR');
+                    }}
+                    className={`mt-1 w-full h-8 rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary ${SUPPORTED_CURRENCIES.some(c => c.code === currency) ? 'hidden' : ''}`}
+                  />
                 </div>
 
                 {/* Language */}
@@ -172,5 +200,8 @@ export function Header() {
 
       </div>
     </header>
+
+    <GuidedExamples open={guideOpen} onClose={() => setGuideOpen(false)} />
+    </>
   );
 }

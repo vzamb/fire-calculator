@@ -61,8 +61,9 @@ export function requiredPortfolio(
   recurringIncomes: RecurringIncomeEntry[] = [],
   capitalGainsTax: number = 0,
   costBasisRatio: number = 1,
+  depletePortfolio: boolean = true,
 ): number {
-  if (lifeExpectancy == null) {
+  if (lifeExpectancy == null || !depletePortfolio) {
     const active = pensions.filter(p => p.annualAmount > 0);
     const totalPension = active.reduce((s, p) => s + p.annualAmount, 0);
 

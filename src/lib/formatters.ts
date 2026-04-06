@@ -14,6 +14,21 @@ export const SUPPORTED_CURRENCIES = [
   { code: 'SEK', symbol: 'kr', name: 'Swedish Krona' },
   { code: 'NOK', symbol: 'kr', name: 'Norwegian Krone' },
   { code: 'DKK', symbol: 'kr', name: 'Danish Krone' },
+  { code: 'PLN', symbol: 'zł', name: 'Polish Zloty' },
+  { code: 'CZK', symbol: 'Kč', name: 'Czech Koruna' },
+  { code: 'BRL', symbol: 'R$', name: 'Brazilian Real' },
+  { code: 'MXN', symbol: 'MX$', name: 'Mexican Peso' },
+  { code: 'ZAR', symbol: 'R', name: 'South African Rand' },
+  { code: 'KRW', symbol: '₩', name: 'South Korean Won' },
+  { code: 'TWD', symbol: 'NT$', name: 'Taiwan Dollar' },
+  { code: 'THB', symbol: '฿', name: 'Thai Baht' },
+  { code: 'TRY', symbol: '₺', name: 'Turkish Lira' },
+  { code: 'ILS', symbol: '₪', name: 'Israeli Shekel' },
+  { code: 'PHP', symbol: '₱', name: 'Philippine Peso' },
+  { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
+  { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit' },
+  { code: 'RON', symbol: 'lei', name: 'Romanian Leu' },
+  { code: 'HUF', symbol: 'Ft', name: 'Hungarian Forint' },
 ] as const;
 
 const CURRENCY_SYMBOLS: Record<string, string> = Object.fromEntries(
@@ -23,8 +38,12 @@ const CURRENCY_SYMBOLS: Record<string, string> = Object.fromEntries(
 const SUPPORTED_CURRENCY_CODES = new Set<string>(SUPPORTED_CURRENCIES.map((currency) => currency.code));
 
 export function normalizeCurrency(currency: string): string {
-  const normalized = (currency ?? '').toUpperCase();
-  return SUPPORTED_CURRENCY_CODES.has(normalized) ? normalized : 'EUR';
+  const normalized = (currency ?? '').toUpperCase().trim();
+  if (!normalized || normalized.length < 2) return 'EUR';
+  // Accept any recognized currency or any 3-letter code (custom currencies)
+  if (SUPPORTED_CURRENCY_CODES.has(normalized)) return normalized;
+  if (/^[A-Z]{3}$/.test(normalized)) return normalized;
+  return 'EUR';
 }
 
 let _activeCurrency = 'EUR';
@@ -45,13 +64,21 @@ export function setActiveLocale(locale: string) {
 
 export const formatCurrency = (value: number): string => {
   const localeMap: Record<string, string> = { en: 'en-GB', it: 'it-IT' };
-  return new Intl.NumberFormat(localeMap[_activeLocale] ?? 'en-GB', {
-    style: 'currency',
-    currency: _activeCurrency,
-    currencyDisplay: 'narrowSymbol',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
+  try {
+    return new Intl.NumberFormat(localeMap[_activeLocale] ?? 'en-GB', {
+      style: 'currency',
+      currency: _activeCurrency,
+      currencyDisplay: 'narrowSymbol',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  } catch {
+    // Fallback for unknown currency codes
+    return `${_activeCurrency} ${new Intl.NumberFormat(localeMap[_activeLocale] ?? 'en-GB', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value)}`;
+  }
 };
 
 export const formatCurrencyCompact = (value: number): string => {

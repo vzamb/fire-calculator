@@ -10,7 +10,7 @@ describe('sharing', () => {
       expect(encoded.length).toBeGreaterThan(0);
 
       const decoded = decodeInputsFromHash(encoded);
-      expect(decoded).toEqual(DEFAULT_INPUTS);
+      expect(decoded).toEqual({ inputs: DEFAULT_INPUTS });
     });
 
     it('handles custom inputs with debts and future events', () => {
@@ -30,7 +30,7 @@ describe('sharing', () => {
       };
       const encoded = encodeInputsToHash(inputs);
       const decoded = decodeInputsFromHash(encoded);
-      expect(decoded).toEqual(inputs);
+      expect(decoded).toEqual({ inputs });
     });
   });
 

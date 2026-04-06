@@ -95,7 +95,7 @@ export function runMonteCarlo(
   const baseAnnualExpenses = expenses.monthlyExpenses * 12;
   const initialMonthlyInvestment = fireGoals.monthlyInvestment;
 
-  const maxYears = personalInfo.lifeExpectancy - personalInfo.currentAge + 1;
+  const maxYears = Math.max(1, personalInfo.lifeExpectancy - personalInfo.currentAge + 1);
   const mainPortfolioStart = assets.investedAssets + assets.cashSavings;
 
   const customAssetsBalancesStart = assets.customAssets.map(a => a.balance);
@@ -148,6 +148,7 @@ export function runMonteCarlo(
     let costBasis = startPortfolio;
     let livingExpenses = baseAnnualExpenses;
     let currentMonthlyInvestment = initialMonthlyInvestment;
+    let currentBonus = income.annualBonus ?? 0;
     let retirementExpenses = 0;
     let isRetired = false;
     let fireAge: number | null = null;
@@ -163,7 +164,8 @@ export function runMonteCarlo(
 
       // Random return for this year (log-normal distribution)
       const mu = Math.log(1 + arithmeticNet) - Math.pow(volatility, 2) / 2;
-      const randomReturn = Math.exp(mu + volatility * randn()) - 1;
+      const rawReturn = Math.exp(mu + volatility * randn()) - 1;
+      const randomReturn = Number.isFinite(rawReturn) ? rawReturn : 0;
 
       // Debt payments
       let annualDebtPayments = 0;
@@ -200,7 +202,7 @@ export function runMonteCarlo(
 
       if (!isRetired) {
         // Accumulation
-        const mainContrib = currentMonthlyInvestment * 12;
+        const mainContrib = currentMonthlyInvestment * 12 + currentBonus;
         let totalCustomContrib = 0;
         let totalCustomGrowth = 0;
 
@@ -251,7 +253,8 @@ export function runMonteCarlo(
           inflation,
           recurringIncomeEntries.filter((inc) => inc.startAge <= age || inc.includeInFire),
           capitalGainsTax,
-          currentCostBasisRatio
+          currentCostBasisRatio,
+          fireGoals.depletePortfolio !== false,
         );
 
         // Debt cost — PV of remaining fixed nominal payments
@@ -359,6 +362,7 @@ export function runMonteCarlo(
       if (!isRetired) {
         livingExpenses *= 1 + inflation;
         currentMonthlyInvestment *= 1 + income.annualSalaryGrowth / 100;
+        currentBonus *= 1 + income.annualSalaryGrowth / 100;
 
         // Ensure path captures the value BEFORE we jump to drawdown next loop
         path.push(portfolio);
@@ -382,16 +386,22 @@ export function runMonteCarlo(
   for (let i = 0; i < maxYears; i++) {
     ages.push(personalInfo.currentAge + i);
     const values = allPaths.map((path) => path[i] ?? 0).sort((a, b) => a - b);
-    p10.push(values[Math.floor(numSimulations * 0.10)] ?? 0);
-    p25.push(values[Math.floor(numSimulations * 0.25)] ?? 0);
-    p50.push(values[Math.floor(numSimulations * 0.50)] ?? 0);
-    p75.push(values[Math.floor(numSimulations * 0.75)] ?? 0);
-    p90.push(values[Math.floor(numSimulations * 0.90)] ?? 0);
+    const sanitize = (v: number | undefined): number => {
+      const n = v ?? 0;
+      return Number.isFinite(n) ? n : 0;
+    };
+    p10.push(sanitize(values[Math.floor(numSimulations * 0.10)]));
+    p25.push(sanitize(values[Math.floor(numSimulations * 0.25)]));
+    p50.push(sanitize(values[Math.floor(numSimulations * 0.50)]));
+    p75.push(sanitize(values[Math.floor(numSimulations * 0.75)]));
+    p90.push(sanitize(values[Math.floor(numSimulations * 0.90)]));
   }
 
   // Success rate: % of simulations with portfolio > 0 at life expectancy
   const finalValues = allPaths.map((path) => path[maxYears - 1] ?? 0);
-  const successRate = (finalValues.filter((v) => v > 0).length / numSimulations) * 100;
+  const successRate = numSimulations > 0
+    ? (finalValues.filter((v) => v > 0).length / numSimulations) * 100
+    : 0;
 
   // FIRE age distribution
   const fireAgeCounts = new Map<number, number>();

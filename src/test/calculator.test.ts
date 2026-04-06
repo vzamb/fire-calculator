@@ -32,6 +32,7 @@ function makeInputs(overrides: Partial<{
       monthlyNetSalary: overrides.salary ?? 3000,
       annualSalaryGrowth: 0,
       additionalMonthlyIncome: 0,
+      annualBonus: 0,
       pensions: pensionMonthly > 0
         ? [{ id: 'test', name: 'Test Pension', monthlyAmount: pensionMonthly, startAge: pensionStartAge }]
         : [],
@@ -66,6 +67,7 @@ function makeInputs(overrides: Partial<{
       safeWithdrawalRate: overrides.swr ?? 4,
       fireType: 'regular',
       monthlyInvestment: overrides.monthlyInvestment ?? 1000,
+      depletePortfolio: true,
       futureExpenses: [],
       futureIncomes: [],
       recurringIncomes: [],

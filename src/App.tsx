@@ -11,7 +11,7 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function App() {
   const { setInputs } = useFireStore();
-  const { theme, setTheme, locale } = useUIStore();
+  const { theme, setTheme, locale, setCurrency } = useUIStore();
   const t = getTranslations(locale);
 
   // Apply theme on mount
@@ -20,7 +20,10 @@ function App() {
     // Check for shared inputs in URL
     const shared = extractSharedInputs();
     if (shared) {
-      setInputs(shared);
+      setInputs(shared.inputs);
+      if (shared.currency) {
+        setCurrency(shared.currency);
+      }
       // Clean the hash
       window.history.replaceState(null, '', window.location.pathname);
     }
